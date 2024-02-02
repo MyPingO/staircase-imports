@@ -151,6 +151,14 @@ function extractPythonImportGroups(lines, importPattern) {
         const isMultilineImport = isImportLine && /\(/.test(line);
 
         if (isMultilineImport) {
+
+            // if multiline import comes after regular group
+            if (currentGroup.length > 0) {
+                // push current group and reset
+                importGroups.push({ type: "line-based", imports: currentGroup });
+                currentGroup = [];
+            }
+
             let multiLineImport = "";
             let openingLineIndex = index;
             // while the line does not contain a closing parenthesis
@@ -167,16 +175,16 @@ function extractPythonImportGroups(lines, importPattern) {
 
             if (match) {
                 const opening = line.match(/^\s*/)[0] + match[1];
-                const importGroup = match[2].split(',') // TODO , bug
+                const importGroup = match[2].split(',')
+                    .map(importLine => importLine.trim())
                     .filter(importLine => importLine.length > 0)
-                    .map(importLine => importLine.trim() + ',');
+                    .map(importLine => importLine + ',');
 
                 for (let i = 0; i < importGroup.length; i++) {
                     currentGroup.push({ line: importGroup[i], index: openingLineIndex + i });
                 }
 
                 // console.log(multiLineImport);
-                // TODO: Insert single-line multi-line into the document correctly
 
                 // Add the current group to the import groups
                 importGroups.push({ type: "parenthesised", opening: opening, imports: currentGroup, openingLineIndex: openingLineIndex, closingLineIndex: closingLineIndex });
@@ -200,11 +208,11 @@ function extractPythonImportGroups(lines, importPattern) {
             currentGroup = [];
         }
 
-        // Add the last group if it exists
-        if (currentGroup.length > 0) {
-            importGroups.push({ type: "line-based", imports: currentGroup });
-        }
-
+        
+    }
+    // Add the last group if it exists
+    if (currentGroup.length > 0) {
+        importGroups.push({ type: "line-based", imports: currentGroup });
     }
     return importGroups;
 }
@@ -226,7 +234,8 @@ function replaceMultiLineImportGroup(edit, importGroup, documentUri) {
 
     console.log(sortedMultilineImports);
 
-    const range = new vscode.Range(insertIndex, 0, endIndex, closing.length);
+    const endIndexLine = vscode.window.activeTextEditor.document.lineAt(endIndex);
+    const range = new vscode.Range(insertIndex, 0, endIndex, endIndexLine.text.length);
 
     edit.replace(documentUri, range, sortedMultilineImports);
 }
