@@ -69,28 +69,31 @@ function formatGenericDocument(document, importPattern) {
     const edit = new vscode.WorkspaceEdit();
     importGroups.forEach(group => {
         if (group.length > 1) {
-            applySortedImports(edit, group, lines, document.uri);
+            replaceWithSortedImports(edit, group, lines, document.uri);
         }
     });
 
     return edit;
 }
+function replaceWithSortedImports(edit, importGroup, lines, documentUri) {
+    const config = vscode.workspace.getConfiguration('Staircase Import Formatter');
+    const sortOrder = config.get('order', 'ascending');
 
-function formatPythonDocument(document, importPattern) {
-    const documentText = document.getText();
-    const lines = documentText.split(/\r?\n/); // \r? for windows compatibility
-    const importGroups = extractPythonImportGroups(lines, importPattern);
+    let sortedGroupLines = importGroup.map(importData => importData.line);
+    sortedGroupLines.sort((lineA, lineB) =>
+        sortOrder === 'ascending' ? lineA.length - lineB.length : lineB.length - lineA.length
+    );
 
-    const edit = new vscode.WorkspaceEdit();
-    importGroups.forEach(group => {
-        if (group.length > 1) {
-            applySortedImports(edit, group, lines, document.uri);
-        }
-    });
+    const sortedImportsText = sortedGroupLines.join("\n");
 
-    return edit;
+    replaceGroup(edit, importGroup, lines, sortedImportsText, documentUri);
 }
-
+function replaceGroup(edit, importGroup, lines, sortedImportsText, documentUri) {
+    const startLineIndex = importGroup[0].index;
+    const endLineIndex = importGroup[importGroup.length - 1].index;
+    const range = new vscode.Range(startLineIndex, 0, endLineIndex, lines[endLineIndex].length);
+    edit.replace(documentUri, range, sortedImportsText);
+}
 function extractImportGroups(lines, importPattern) {
     let importGroups = [];
     let currentGroup = [];
@@ -114,6 +117,30 @@ function extractImportGroups(lines, importPattern) {
     return importGroups;
 }
 
+function formatPythonDocument(document, importPattern) {
+    const documentText = document.getText();
+    const lines = documentText.split(/\r?\n/); // \r? for windows compatibility
+    const importGroups = extractPythonImportGroups(lines, importPattern);
+
+    const edit = new vscode.WorkspaceEdit();
+    for (let i = 0; i < importGroups.length; i++) {
+        const importGroup = importGroups[i];
+        if (importGroup.imports.length > 1) {
+            if (importGroup.type === "line-based") {
+                let uri = document.uri;
+                replaceWithSortedImports(edit, importGroup.imports, lines, uri);
+                console.log("FORMATTED");
+            }
+            else if (importGroup.type === "parenthesised") {
+                let uri = document.uri;
+                replaceMultiLineImportGroup(edit, importGroup, uri)
+            }
+        }
+    }
+
+    return edit;
+}
+
 function extractPythonImportGroups(lines, importPattern) {
     let importGroups = [];
     let currentGroup = [];
@@ -125,82 +152,83 @@ function extractPythonImportGroups(lines, importPattern) {
 
         if (isMultilineImport) {
             let multiLineImport = "";
+            let openingLineIndex = index;
             // while the line does not contain a closing parenthesis
             while (/\)/.test(lines[index]) === false) {
                 multiLineImport += lines[index] + "\n";
                 index++;
             }
+            let closingLineIndex = index;
             // add the last line with the closing parenthesis
             multiLineImport += lines[index];
 
-            // Get rid of all newlines
-            multiLineImport = multiLineImport.replace(/\n/g, '');
+            const pattern = /(from\s+\w+\s+import\s+\()([\s\S]+?)\)/i;
+            const match = multiLineImport.match(pattern);
 
-            // Add a new line after the opening parenthesis
-            multiLineImport = multiLineImport.replace(/\(/, '(\n');
+            if (match) {
+                const opening = line.match(/^\s*/)[0] + match[1];
+                const importGroup = match[2].split(',') // TODO , bug
+                    .filter(importLine => importLine.length > 0)
+                    .map(importLine => importLine.trim() + ',');
 
-            // Add a new line before the closing parenthesis
-            multiLineImport = multiLineImport.replace(/\)/, '\n)');
-
-            // Replace each comma with a comma and a new line
-            multiLineImport = multiLineImport.replace(/,/g, ',\n');
-
-            // Add every line that has a comma to the group
-            const multiLineImports = multiLineImport.split('\n');
-            const openingParenthesisSection = multiLineImports[0];
-            const closingParenthesisSection = multiLineImports[multiLineImports.length - 1];
-            for (let i = 0; i < multiLineImports.length; i++) {
-                const multiLineImport = multiLineImports[i];
-                if (multiLineImport.includes(',')) {
-                    currentGroup.push({ line: multiLineImport, index: index - multiLineImports.length + i + 2});
+                for (let i = 0; i < importGroup.length; i++) {
+                    currentGroup.push({ line: importGroup[i], index: openingLineIndex + i });
                 }
+
+                // console.log(multiLineImport);
+                // TODO: Insert single-line multi-line into the document correctly
+
+                // Add the current group to the import groups
+                importGroups.push({ type: "parenthesised", opening: opening, imports: currentGroup, openingLineIndex: openingLineIndex, closingLineIndex: closingLineIndex });
+                currentGroup = [];
             }
-
-            // Combine the opening and closing sections with the current group as a string to insert
-            multiLineImport = openingParenthesisSection + '\n' + multiLineImports.slice(1, multiLineImports.length - 1).join('\n') + '\n' + closingParenthesisSection;
-
-            console.log(multiLineImport);
-
-            // Add the current group to the import groups
-            importGroups.push(currentGroup);
-            currentGroup = [];
-        } 
+            else {
+                const message = "Failed to match multiline import. Please report this issue on the extension GitHub page!";
+                const buttonLabel = "Report Issue";
+                vscode.window.showErrorMessage(message, buttonLabel).then((selection) => {
+                    if (selection === buttonLabel) {
+                        vscode.env.openExternal(vscode.Uri.parse('https://github.com/MyPingO/staircase-imports/issues'));
+                    }
+                });
+            }
+        }
         else if (isImportLine) {
             currentGroup.push({ line, index });
-        } 
+        }
         else if (currentGroup.length > 0) {
-            importGroups.push(currentGroup);
+            importGroups.push({ type: "line-based", imports: currentGroup });
             currentGroup = [];
         }
-    }
 
-    // Add the last group if it exists
-    if (currentGroup.length > 0) {
-        importGroups.push(currentGroup);
-    }
+        // Add the last group if it exists
+        if (currentGroup.length > 0) {
+            importGroups.push({ type: "line-based", imports: currentGroup });
+        }
 
+    }
     return importGroups;
 }
-
-function applySortedImports(edit, group, lines, documentUri) {
+function replaceMultiLineImportGroup(edit, importGroup, documentUri) {
+    const insertIndex = importGroup.openingLineIndex;
+    const endIndex = importGroup.closingLineIndex;
     const config = vscode.workspace.getConfiguration('Staircase Import Formatter');
     const sortOrder = config.get('order', 'ascending');
 
-    let sortedGroupLines = group.map(importObj => importObj.line);
-    sortedGroupLines.sort((lineA, lineB) => 
+    let sortedGroupLines = importGroup.imports.map(importGroup => importGroup.line);
+    sortedGroupLines.sort((lineA, lineB) =>
         sortOrder === 'ascending' ? lineA.length - lineB.length : lineB.length - lineA.length
     );
 
-    const sortedImportsText = sortedGroupLines.join("\n");
-    const replacementRange = createReplacementRange(group, lines);
+    let sortedMultilineImports;
+    const openingLeadingWhitespace = importGroup.opening.match(/^\s*/)[0];
+    const closing = `${openingLeadingWhitespace})`;
+    sortedMultilineImports = importGroup.opening + '\n' + sortedGroupLines.map(line => openingLeadingWhitespace + '\t' + line).join('\n') + '\n' + closing;
 
-    edit.replace(documentUri, replacementRange, sortedImportsText);
-}
+    console.log(sortedMultilineImports);
 
-function createReplacementRange(group, lines) {
-    const startLineIndex = group[0].index;
-    const endLineIndex = group[group.length - 1].index;
-    return new vscode.Range(startLineIndex, 0, endLineIndex, lines[endLineIndex].length);
+    const range = new vscode.Range(insertIndex, 0, endIndex, closing.length);
+
+    edit.replace(documentUri, range, sortedMultilineImports);
 }
 
 function deactivate() { }
