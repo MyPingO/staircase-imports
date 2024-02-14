@@ -1,65 +1,50 @@
-# staircase-imports README
+# Staircase Imports for VSCode
 
-This is the README for your extension "staircase-imports". After writing up a brief description, we recommend including the following sections.
+## Overview
+Staircase Imports formats your import statements into a staircase like structure, ensuring that your imports are organized and look cool.
 
-## Features
+## Installation
+1. Open Visual Studio Code.
+2. Navigate to the Extensions view.
+3. Search for "Staircase Imports".
+4. Click on the Install button to install the extension.
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+## Usage
+Simply work on your Python files as usual. When you save your file, Staircase Imports automatically formats the import statements in your file, organizing them into a neat structure.
 
-For example if there is an image subfolder under your extension project workspace:
+## Supported Languages
+- Python (fully supported)
+- Support for other languages are in the works.
 
-\!\[feature X\]\(images/feature-x.png\)
+## Contributing
+We welcome contributions and suggestions! Feel free to open an issue or submit a pull request on our [GitHub repository](https://github.com/MyPingO/staircase-imports).
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+## License
+This extension is licensed under [MIT License](LICENSE).
 
 ## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+Choose to format your imports in ascending or descending order.
 
 For example:
+ascending:
+```python
+import os
+import sys
+import time
+```
 
-This extension contributes the following settings:
+descending:
+```python
+import time
+import sys
+import os
+```
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
 
 ## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+- None yet
 
 ---
 
-## Working with Markdown
-
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
 
 **Enjoy!**

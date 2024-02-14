@@ -4,13 +4,33 @@
   "description": "Format your library imports in a staircase pattern",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.0.0"
   },
+  "publisher": "MyPing0",
+  "author": {
+    "name": "MyPing0",
+    "email": "mypingo7@yahoo.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MyPingO/staircase-imports"
+  },
+  "keywords": [
+    "staircase",
+    "imports",
+    "formatter",
+    "python",
+    "vscode",
+    "extension",
+    "MyPing0"
+  ],
+  "icon": "icon.png",
   "categories": [
     "Other"
   ],
   "activationEvents": [
-    "*"
+    "onLanguage:python"
   ],
   "main": "./extension.js",
   "contributes": {
