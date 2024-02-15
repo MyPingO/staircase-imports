@@ -51,6 +51,15 @@
             "descending"
           ],
           "description": "Choose between ascending or descending order for import statements."
+        },
+        "Staircase Import Formatter.enabled": {
+          "type": "string",
+          "default": "enabled",
+          "enum": [
+            "enabled",
+            "disabled"
+          ],
+          "description": "Enable or disabled the Staircase Imports extension."
         }
       }
     },

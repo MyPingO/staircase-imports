@@ -33,7 +33,9 @@ const IMPORT_PATTERNS = {
 function activate(context) {
     vscode.window.showInformationMessage('Staircase Import Formatter Activated!');
     context.subscriptions.push(vscode.workspace.onWillSaveTextDocument(event => {
-        if (event.document.uri.scheme === 'file') {
+        const config = vscode.workspace.getConfiguration('Staircase Import Formatter');
+        const enabled = config.get('enabled', 'enabled');
+        if (event.document.uri.scheme === 'file' && enabled === 'enabled') {
             formatOnSave(event);
         }
     }));
