@@ -1,6 +1,6 @@
 # Staircase Imports for VSCode
 
-<img src="https://pouch.jumpshare.com/preview/9iNKpqDrn9hE0JOHUH5nfvJgwPhndRtNbc4ixtzdV95D8-Is3FrNHtG1eVCg4HazXOSUTfIV_KwfWbk9rQSn0AQnOqqglmPbJfN43mFezz8">
+![Staircase Imports Showcase GIF](https://github.com/MyPingO/staircase-imports/raw/master/Demo.gif)
 
 ## Overview
 Staircase Imports formats your import statements into a staircase like structure, ensuring that your imports are organized and look cool.
