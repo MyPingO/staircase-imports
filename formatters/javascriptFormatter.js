@@ -7,7 +7,7 @@ function isExcludableLine(line) {
 }
 
 function isStartOfMultilineImport(line) {
-    return line.includes('import') && line.includes('{') && !line.includes('}');
+    return line.startsWith('import') && line.includes('{') && !line.includes('}');
 }
 
 function isEndOfMultilineImport(line) {
@@ -63,7 +63,7 @@ function extractJavascriptImportGroups(lines) {
             lastWasImport = false;
         } else if (multilineImport) {
             currentGroup.push({ line, index, indentation: lineIndentation });
-        } else if (line.includes('import') && !inCommentBlock) {
+        } else if (line.startsWith('import') && !inCommentBlock) {
             if (!lastWasImport && currentGroup.length) {
                 importGroups.push({ type: "singleline", imports: currentGroup });
                 currentGroup = [];
