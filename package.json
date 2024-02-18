@@ -25,22 +25,18 @@
     "extension",
     "MyPing0"
   ],
-  "icon": "icon.png",
+  "icon": "media/icon.png",
   "categories": [
+    "Formatters",
     "Other"
   ],
   "activationEvents": [
     "onLanguage:python",
-    "onLanguage:javascript"
+    "onLanguage:javascript",
+    "onLanguage:typescript"
   ],
   "main": "./extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "staircase-import-formatter.helloWorld",
-        "title": "Hello World"
-      }
-    ],
     "configuration": {
       "title": "Staircase Import Formatter",
       "properties": {

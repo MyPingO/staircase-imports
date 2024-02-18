@@ -66,7 +66,8 @@ function formatOnSave(event) {
                     }
                 }
                 break;
-            case 'javascript' || 'typescript':
+            case 'typescript':
+            case 'javascript':
                 const documentText = document.getText();
                 const lines = documentText.split(/\r?\n/); // \r? for windows compatibility
                 importGroups = javascriptFormatter.extractJavascriptImportGroups(lines);

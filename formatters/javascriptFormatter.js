@@ -1,6 +1,5 @@
 const vscode = require('vscode');
 
-
 function isExcludableLine(line) {
     const trimmedLine = line.trim();
     // Checks for dynamic imports, comments, empty lines, or strings that should be excluded
@@ -110,47 +109,3 @@ module.exports = {
     extractJavascriptImportGroups,
     replaceMultilineImportGroup
 };
-
-
-// --TESTING-- //
-
-// // Example usage with test lines
-const testLines = [
-    "// Single-line comment before imports",
-    "import { firstNamedImport } from 'first-named-module';",
-    "import defaultImport from 'default-module';",
-    "/* Multi-line comment block",
-    " * containing an import statement",
-    " * import { commentedImport } from 'commented-module';",
-    " */",
-    "import {",
-    "    multilineNamedImport1,",
-    "    multilineNamedImport2",
-    "} from 'multiline-named-module';",
-    "`Template literal without import`",
-    "import(`dynamic-import-module`).then(m => console.log(m));",  // Dynamic import, should be excluded
-    "    import indentedImport from 'indented-module';",  // Indented import
-    "// import { commentedOutImport } from 'commented-out-module';",  // Commented-out import
-    "import * as namespaceImport from 'namespace-module';",
-    "import secondDefaultImport, { secondNamedImport } from 'second-mixed-module';",
-    "function insideFunction() {",
-    "  import('dynamic-import-inside-function').then(m => console.log(m));",  // Inside function, should be excluded
-    "}",
-    "import './side-effect-only-module';",  // Side-effect only import
-    "// Ending comment after imports"
-];
-
-// function printImportGroups(importGroups) {
-//     importGroups.forEach((group, groupIndex) => {
-//         console.log(`Group ${groupIndex + 1} (${group.type}):`);
-//         group.imports.forEach(importStatement => {
-//             console.log(`  Line ${importStatement.index} (Indentation: ${importStatement.indentation}): ${importStatement.line}`);
-//         });
-//         console.log(); // Add a blank line between groups for readability
-//     });
-// }
-
-// const importGroups = extractJavascriptImportGroups(testLines);
-
-// Use the function to print the import groups
-// printImportGroups(importGroups);
