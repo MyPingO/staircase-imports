@@ -1,10 +1,11 @@
 const vscode = require('vscode');
 const pythonFormatter = require('./formatters/pythonFormatter');
+const javascriptFormatter = require('./formatters/javascriptFormatter');
 
 const IMPORT_PATTERNS = {
     'python': /^\s*(import .*|from .* import(.*\n)*.*);?$/gm,
-    // 'javascript': /^\s*import .*;?$/gm,
-    // 'typescript': /^\s*import .*;?$/gm,
+    'javascript': /^\s*import .*;?$/gm,
+    'typescript': /^\s*import .*;?$/gm,
     // 'java': /^\s*import .*;$/gm,
     // 'csharp': /^\s*using .*;$/gm,
     // 'c': /^\s*#include .*$/gm,
@@ -48,18 +49,36 @@ function formatOnSave(event) {
     const uri = document.uri;
     if (importPattern) {
         let edit;
+        let importGroups;
         switch (languageId) {
             case 'python':
-                let importGroups = pythonFormatter.getPythonImportGroups(document, importPattern);
+                importGroups = pythonFormatter.getPythonImportGroups(document, importPattern);
                 edit = new vscode.WorkspaceEdit();
                 for (let i = 0; i < importGroups.length; i++) {
                     const importGroup = importGroups[i];
                     if (importGroup.imports.length > 1) {
-                        if (importGroup.type === "line-based") {
+                        if (importGroup.type === "singleline") {
                             replaceSingleLineImportGroup(edit, importGroup.imports, document, uri);
                         }
-                        else if (importGroup.type === "parenthesised") {
+                        else if (importGroup.type === "multiline") {
                             pythonFormatter.replaceMultiLineImportGroup(edit, importGroup, uri)
+                        }
+                    }
+                }
+                break;
+            case 'javascript' || 'typescript':
+                const documentText = document.getText();
+                const lines = documentText.split(/\r?\n/); // \r? for windows compatibility
+                importGroups = javascriptFormatter.extractJavascriptImportGroups(lines);
+                edit = new vscode.WorkspaceEdit();
+                for (let i = 0; i < importGroups.length; i++) {
+                    const importGroup = importGroups[i];
+                    if (importGroup.imports.length > 1) {
+                        if (importGroup.type === "singleline") {
+                            replaceSingleLineImportGroup(edit, importGroup.imports, document, uri);
+                        }
+                        else if (importGroup.type === "multiline") {
+                            javascriptFormatter.replaceMultilineImportGroup(edit, importGroup, uri);
                         }
                     }
                 }
@@ -126,33 +145,10 @@ function replaceSingleLineImportGroup(edit, importGroup, document, documentUri) 
     sortedGroupLines.sort((lineA, lineB) =>
         sortOrder === 'ascending' ? lineA.length - lineB.length : lineB.length - lineA.length
     );
-    
+
     const sortedImportsText = sortedGroupLines.join("\n");
-    
+
     edit.replace(documentUri, range, sortedImportsText);
-}
-
-function extractImportGroups(lines, importPattern) {
-    let importGroups = [];
-    let currentGroup = [];
-
-    for (let index = 0; index < lines.length; index++) {
-        const line = lines[index];
-        const isImportLine = new RegExp(importPattern).test(line);
-
-        if (isImportLine) {
-            currentGroup.push({ line, index });
-        } else if (currentGroup.length > 0) {
-            importGroups.push(currentGroup);
-            currentGroup = [];
-        }
-    }
-
-    if (currentGroup.length > 0) {
-        importGroups.push(currentGroup);
-    }
-
-    return importGroups;
 }
 
 function deactivate() { }

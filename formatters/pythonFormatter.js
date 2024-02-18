@@ -21,7 +21,7 @@ function extractPythonImportGroups(lines, importPattern) {
             // if multiline import comes after regular group
             if (currentGroup.length > 0) {
                 // push current group and reset
-                importGroups.push({ type: "line-based", imports: currentGroup });
+                importGroups.push({ type: "singleline", imports: currentGroup });
                 currentGroup = [];
             }
 
@@ -53,7 +53,7 @@ function extractPythonImportGroups(lines, importPattern) {
                 // console.log(multiLineImport);
 
                 // Add the current group to the import groups
-                importGroups.push({ type: "parenthesised", opening: opening, imports: currentGroup, openingLineIndex: openingLineIndex, closingLineIndex: closingLineIndex });
+                importGroups.push({ type: "multiline", opening: opening, imports: currentGroup, openingLineIndex: openingLineIndex, closingLineIndex: closingLineIndex });
                 currentGroup = [];
             }
             else {
@@ -70,7 +70,7 @@ function extractPythonImportGroups(lines, importPattern) {
             currentGroup.push({ line, index });
         }
         else if (currentGroup.length > 0) {
-            importGroups.push({ type: "line-based", imports: currentGroup });
+            importGroups.push({ type: "singleline", imports: currentGroup });
             currentGroup = [];
         }
 
@@ -78,7 +78,7 @@ function extractPythonImportGroups(lines, importPattern) {
     }
     // Add the last group if it exists
     if (currentGroup.length > 0) {
-        importGroups.push({ type: "line-based", imports: currentGroup });
+        importGroups.push({ type: "singleline", imports: currentGroup });
     }
     return importGroups;
 }
