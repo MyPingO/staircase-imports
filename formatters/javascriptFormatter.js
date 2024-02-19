@@ -7,15 +7,11 @@ function isExcludableLine(line) {
 }
 
 function isStartOfMultilineImport(line) {
-    return line.startsWith('import') && line.includes('{') && !line.includes('}');
+    return line.startsWith('import ') && line.includes('{') && !line.includes('}');
 }
 
 function isEndOfMultilineImport(line) {
     return line.includes('}');
-}
-
-function getIndentation(line) {
-    return line.length - line.trimStart().length;
 }
 
 function extractJavascriptImportGroups(lines) {
@@ -26,7 +22,6 @@ function extractJavascriptImportGroups(lines) {
     let lastWasImport = false;
 
     lines.forEach((line, index) => {
-        const lineIndentation = getIndentation(line);
         const trimmedLine = line.trim();
 
         if (trimmedLine.startsWith("/*")) {
@@ -54,21 +49,21 @@ function extractJavascriptImportGroups(lines) {
                 currentGroup = [];
             }
             multilineImport = true;
-            currentGroup = [{ line, index, indentation: lineIndentation }];
+            currentGroup = [{ line, index }];
         } else if (multilineImport && isEndOfMultilineImport(line)) {
-            currentGroup.push({ line, index, indentation: lineIndentation });
+            currentGroup.push({ line, index });
             importGroups.push({ type: "multiline", imports: currentGroup });
             currentGroup = [];
             multilineImport = false;
             lastWasImport = false;
         } else if (multilineImport) {
-            currentGroup.push({ line, index, indentation: lineIndentation });
-        } else if (line.startsWith('import') && !inCommentBlock) {
+            currentGroup.push({ line, index });
+        } else if (line.startsWith('import ') && !inCommentBlock) {
             if (!lastWasImport && currentGroup.length) {
                 importGroups.push({ type: "singleline", imports: currentGroup });
                 currentGroup = [];
             }
-            currentGroup.push({ line, index, indentation: lineIndentation });
+            currentGroup.push({ line, index });
             lastWasImport = true;
         }
     });
