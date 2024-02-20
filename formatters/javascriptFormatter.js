@@ -1,7 +1,6 @@
 const vscode = require('vscode');
 
-function isExcludableLine(line) {
-    const trimmedLine = line.trim();
+function isExcludableLine(trimmedLine) {
     // Checks for dynamic imports, comments, empty lines, or strings that should be excluded
     return trimmedLine.startsWith("import(") || trimmedLine.startsWith("//") || trimmedLine.startsWith("/*") || trimmedLine.startsWith("`") || trimmedLine.startsWith("'") || trimmedLine.startsWith("\"") || trimmedLine === "" || trimmedLine.endsWith("*/");
 }
@@ -15,7 +14,7 @@ function isEndOfMultilineImport(line) {
 }
 
 function extractJavascriptImportGroups(lines) {
-    const importGroups = [];
+    let importGroups = [];
     let currentGroup = [];
     let multilineImport = false;
     let inCommentBlock = false;
@@ -32,7 +31,7 @@ function extractJavascriptImportGroups(lines) {
             return; // Skip the line that closes a comment block
         }
 
-        if (!trimmedLine || isExcludableLine(line) || inCommentBlock) {
+        if (!trimmedLine || isExcludableLine(trimmedLine) || inCommentBlock) {
             if (currentGroup.length && !multilineImport) {
                 importGroups.push({ type: "singleline", imports: currentGroup });
                 currentGroup = [];
@@ -41,7 +40,7 @@ function extractJavascriptImportGroups(lines) {
             return;
         }
 
-        if (isStartOfMultilineImport(line)) {
+        if (isStartOfMultilineImport(trimmedLine)) {
             // If the current group is not empty, push it to the import groups
             // Incase there is a group of single line imports before the multiline import
             if (currentGroup.length) {
@@ -58,7 +57,7 @@ function extractJavascriptImportGroups(lines) {
             lastWasImport = false;
         } else if (multilineImport) {
             currentGroup.push({ line, index });
-        } else if (line.startsWith('import ') && !inCommentBlock) {
+        } else if (trimmedLine.startsWith('import ') && !inCommentBlock) {
             if (!lastWasImport && currentGroup.length) {
                 importGroups.push({ type: "singleline", imports: currentGroup });
                 currentGroup = [];
