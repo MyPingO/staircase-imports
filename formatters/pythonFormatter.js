@@ -36,7 +36,7 @@ function extractPythonImportGroups(lines, importPattern) {
             // add the last line with the closing parenthesis
             multiLineImport += lines[index];
 
-            const pattern = /(from\s+\w+\s+import\s+\()([\s\S]+?)\)/i;
+            const pattern = /(from\s+[\w\.]+\s+import\s*\()([\s\S]+?)\)/i;
             const match = multiLineImport.match(pattern);
 
             if (match) {
