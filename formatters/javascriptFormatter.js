@@ -144,6 +144,27 @@ function replaceMultilineImportGroup(edit, importGroup, documentUri) {
 
 	const imports = importGroup.imports.slice(1, importGroup.imports.length - 1);
 
+	// Make sure the last import has a comma at the end
+	const lastImportLine = imports[imports.length - 1].line;
+
+	// It might have an inline comment
+	let lastImportLineSplit = lastImportLine.split(/(?=\/\/)|(?=\/\*)/); // Split the line at the start of a comment without removing the delimiter from the string
+
+	// Save trailing whitespace to add back later
+	const whitespaceMatch = lastImportLineSplit[0].match(/\s+$/);
+	const trailingWhitespace = whitespaceMatch ? whitespaceMatch[0] : "";
+
+	// Get rid of trailing whitespace
+	lastImportLineSplit[0] = lastImportLineSplit[0].trimEnd();
+
+	// Add comma if it doesn't exist
+	if (!lastImportLineSplit[0].endsWith(",")) {
+		lastImportLineSplit[0] = lastImportLineSplit[0] + "," + trailingWhitespace;
+	}
+
+	// Rejoin the line
+	imports[imports.length - 1].line = lastImportLineSplit.join("");
+
 	const sortOrder = vscode.workspace.getConfiguration("Staircase Import Formatter").get("order", "ascending");
 
 	// Sort the imports within the group according to their line length
@@ -155,11 +176,10 @@ function replaceMultilineImportGroup(edit, importGroup, documentUri) {
 	let resultWithComments = [];
 
 	// Iterate over each importLine
-	sortedGroupLines.forEach(importLine => {
+	sortedGroupLines.forEach((importLine) => {
 		// If the importLine has associated comments, add them first
 		if (importLine.comments && importLine.comments.length > 0) {
-			
-			importLine.comments.forEach(comment => {
+			importLine.comments.forEach((comment) => {
 				resultWithComments.push(comment);
 				if (comment.index < startLineIndex) {
 					startLineIndex = comment.index;
@@ -172,14 +192,14 @@ function replaceMultilineImportGroup(edit, importGroup, documentUri) {
 
 	// The closing line might also have leading comments
 	if (importGroup.imports[importGroup.imports.length - 1].comments.length > 0) {
-		importGroup.imports[importGroup.imports.length - 1].comments.forEach(comment => {
+		importGroup.imports[importGroup.imports.length - 1].comments.forEach((comment) => {
 			resultWithComments.push(comment);
 		});
 	}
 
-
 	// Construct the sorted multiline import string
-	let sortedMultilineImports = startLine + resultWithComments.map((importLine) => `${importLine.line}`).join("\n") + "\n" + endLine;
+	let sortedMultilineImports =
+		startLine + resultWithComments.map((importLine) => `${importLine.line}`).join("\n") + "\n" + endLine;
 
 	const endLineLength = vscode.window.activeTextEditor.document.lineAt(endLineIndex).text.length;
 	const range = new vscode.Range(startLineIndex, 0, endLineIndex, endLineLength);
@@ -200,24 +220,22 @@ function replaceSinglelineImportGroup(edit, importGroup, documentUri) {
 	);
 
 	// Initialize a new array to hold the result
-    let resultWithComments = [];
+	let resultWithComments = [];
 
-    // Iterate over each importLine
-    sortedGroupLines.forEach(importLine => {
-        // If the importLine has associated comments, add them first
-        if (importLine.comments && importLine.comments.length > 0) {
-            
-            importLine.comments.forEach(comment => {
-                resultWithComments.push(comment);
+	// Iterate over each importLine
+	sortedGroupLines.forEach((importLine) => {
+		// If the importLine has associated comments, add them first
+		if (importLine.comments && importLine.comments.length > 0) {
+			importLine.comments.forEach((comment) => {
+				resultWithComments.push(comment);
 				if (comment.index < startLineIndex) {
 					startLineIndex = comment.index;
 				}
-            });
-        }
-        // Then, add the importLine itself
-        resultWithComments.push(importLine);
-    });
-
+			});
+		}
+		// Then, add the importLine itself
+		resultWithComments.push(importLine);
+	});
 
 	// Construct the sorted singleline import string
 	let sortedSinglelineImports = resultWithComments.map((importLine) => `${importLine.line}`).join("\n");

@@ -1,25 +1,25 @@
-const assert = require('assert');
+const assert = require("assert");
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
-const vscode = require('vscode');
+const vscode = require("vscode");
 // const myExtension = require('../extension');
 
 async function createOrVerifyFile(filePath) {
 	try {
-	  await vscode.workspace.fs.writeFile(filePath, Buffer.from('')); // Create or overwrite
-	  console.log('File is ready (created or already existed).');
+		await vscode.workspace.fs.writeFile(filePath, Buffer.from("")); // Create or overwrite
+		console.log("File is ready (created or already existed).");
 	} catch (err) {
-	  console.error('Error handling file:', err);
+		console.error("Error handling file:", err);
 	}
-  }
+}
 
-suite('Extension Test Suite', () => {
-	vscode.window.showInformationMessage('Start all tests.');
+suite("Extension Test Suite", () => {
+	vscode.window.showInformationMessage("Start all tests.");
 	let filePath;
 	let document;
 	let editor;
-	test('Basic Javascript Imports Test', async () => {
+	test("Basic Javascript Imports Test", async () => {
 		// Open correct test file from test directory
 		filePath = vscode.Uri.file(__dirname + "/test.js");
 		// Check if the file exists, create it if it doesn't
@@ -51,16 +51,16 @@ suite('Extension Test Suite', () => {
 		`;
 
 		// Get the document's content
-		const documentContent = document.getText().replace(/\r/g, ''); // replace(/\r/g, '') for windows compatibility
+		const documentContent = document.getText().replace(/\r/g, ""); // replace(/\r/g, '') for windows compatibility
 
 		// Test if the content is as expected
 		assert.strictEqual(documentContent, expectedContent);
 
 		// Close the document
-		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	});
 
-	test('Basic Imports Test with Leading Comments', async () => {
+	test("Basic Imports Test with Leading Comments", async () => {
 		// Open correct test file from test directory
 		filePath = vscode.Uri.file(__dirname + "/test.js");
 		// Check if the file exists, create it if it doesn't
@@ -98,16 +98,16 @@ suite('Extension Test Suite', () => {
 		`;
 
 		// Get the document's content
-		const documentContent = document.getText().replace(/\r/g, ''); // replace(/\r/g, '') for windows compatibility
+		const documentContent = document.getText().replace(/\r/g, ""); // replace(/\r/g, '') for windows compatibility
 
 		// Test if the content is as expected
 		assert.strictEqual(documentContent, expectedContent);
 
 		// Close the document
-		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	});
 
-	test('Multiline Javascript Imports Test', async () => {
+	test("Multiline Javascript Imports Test", async () => {
 		// Open correct test file from test directory
 		filePath = vscode.Uri.file(__dirname + "/test.js");
 		// Check if the file exists, create it if it doesn't
@@ -143,13 +143,13 @@ suite('Extension Test Suite', () => {
 		`;
 
 		// Get the document's content
-		const documentContent = document.getText().replace(/\r/g, ''); // replace(/\r/g, '') for windows compatibility
+		const documentContent = document.getText().replace(/\r/g, ""); // replace(/\r/g, '') for windows compatibility
 
 		// Test if the content is as expected
 		assert.strictEqual(documentContent, expectedContent);
 
 		// Close the document
-		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	});
 
 	test("Javascript Multiline Imports Test with Leading Comments", async () => {
@@ -196,13 +196,13 @@ suite('Extension Test Suite', () => {
 		`;
 
 		// Get the document's content
-		const documentContent = document.getText().replace(/\r/g, ''); // replace(/\r/g, '') for windows compatibility
+		const documentContent = document.getText().replace(/\r/g, ""); // replace(/\r/g, '') for windows compatibility
 
 		// Test if the content is as expected
 		assert.strictEqual(documentContent, expectedContent);
 
 		// Close the document
-		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	});
 
 	test("Javascript Imports Test with Trailing Comments", async () => {
@@ -210,7 +210,7 @@ suite('Extension Test Suite', () => {
 		filePath = vscode.Uri.file(__dirname + "/test.js");
 		// Check if the file exists, create it if it doesn't
 		await createOrVerifyFile(filePath);
-		
+
 		document = await vscode.workspace.openTextDocument(filePath);
 		editor = await vscode.window.showTextDocument(document);
 
@@ -249,13 +249,12 @@ suite('Extension Test Suite', () => {
 		`;
 
 		// Get the document's content
-		const documentContent = document.getText().replace(/\r/g, ''); // replace(/\r/g, '') for windows compatibility
+		const documentContent = document.getText().replace(/\r/g, ""); // replace(/\r/g, '') for windows compatibility
 
 		// Test if the content is as expected
 		assert.strictEqual(documentContent, expectedContent);
 
 		// Close the document
-		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	});
-
 });
