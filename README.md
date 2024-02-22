@@ -1,7 +1,5 @@
 # Staircase Imports for VSCode
 
-## **I am working on making this extension less buggy and more robust using a new method that implements AST Parser's. Please be patient as I work on refactoring the codebase. Thank you!**
-
 ![Staircase Imports Showcase GIF](https://github.com/MyPingO/staircase-imports/raw/master/media/Demo.gif)
 
 ## Overview
