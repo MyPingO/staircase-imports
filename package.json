@@ -4,7 +4,7 @@
   "description": "Format your library imports in a staircase pattern",
   "version": "0.1.6",
   "engines": {
-    "vscode": "^1.0.0"
+    "vscode": "^1.85.0"
   },
   "publisher": "MyPing0",
   "author": {
