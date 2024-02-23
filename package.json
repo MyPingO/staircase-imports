@@ -59,12 +59,10 @@
           "description": "Enable or disabled the Staircase Imports extension."
         }
       }
-    },
-    "scripts": {
-      "lint": "eslint .",
-      "pretest": "npm run lint",
-      "test": "vscode-test"
     }
+  },
+  "scripts": {
+    "test": "vscode-test"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
