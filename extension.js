@@ -52,17 +52,19 @@ function formatOnSave(event) {
 	if (importPattern) {
 		let edit;
 		let importGroups;
+		const documentText = document.getText();
+		const lines = documentText.split(/\r?\n/); // \r? for windows compatibility
 		switch (languageId) {
 			case "python":
-				importGroups = pythonFormatter.getPythonImportGroups(document, importPattern);
+				importGroups = pythonFormatter.extractPythonImportGroups(lines);
 				edit = new vscode.WorkspaceEdit();
 				for (let i = 0; i < importGroups.length; i++) {
 					const importGroup = importGroups[i];
 					if (importGroup.imports.length > 1) {
 						if (importGroup.type === "singleline") {
-							replaceSingleLineImportGroup(edit, importGroup.imports, document, uri);
+							pythonFormatter.replaceSinglelineImportGroup(edit, importGroup, uri);
 						} else if (importGroup.type === "multiline") {
-							pythonFormatter.replaceMultiLineImportGroup(edit, importGroup, uri);
+							pythonFormatter.replaceMultilineImportGroup(edit, importGroup, uri);
 						}
 					}
 				}
@@ -71,8 +73,6 @@ function formatOnSave(event) {
 			case "typescript":
 			case "javascriptreact":
 			case "javascript":
-				const documentText = document.getText();
-				const lines = documentText.split(/\r?\n/); // \r? for windows compatibility
 				importGroups = javascriptFormatter.extractJavascriptImportGroups(lines);
 				edit = new vscode.WorkspaceEdit();
 				for (let i = 0; i < importGroups.length; i++) {

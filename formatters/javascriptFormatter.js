@@ -148,7 +148,7 @@ function replaceMultilineImportGroup(edit, importGroup, documentUri) {
 	const lastImportLine = imports[imports.length - 1].line;
 
 	// It might have an inline comment
-	let lastImportLineSplit = lastImportLine.split(/(?=\/\/)|(?=\/\*)/); // Split the line at the start of a comment without removing the delimiter from the string
+	let lastImportLineSplit = lastImportLine.split(/(?=\/\/)|(?=\/\*)/); // Split without removing the delimiter from the string
 
 	// Save trailing whitespace to add back later
 	const whitespaceMatch = lastImportLineSplit[0].match(/\s+$/);

@@ -1,113 +1,252 @@
-const vscode = require('vscode');
+const vscode = require("vscode");
 
-function getPythonImportGroups(document, importPattern) {
-    const documentText = document.getText();
-    const lines = documentText.split(/\r?\n/); // \r? for windows compatibility
-    const importGroups = extractPythonImportGroups(lines, importPattern);
-
-    return importGroups;
-}
-function extractPythonImportGroups(lines, importPattern) {
-    let importGroups = [];
-    let currentGroup = [];
-
-    for (let index = 0; index < lines.length; index++) {
-        const line = lines[index];
-        const isImportLine = new RegExp(importPattern).test(line);
-        const isMultilineImport = isImportLine && /\(/.test(line);
-
-        if (isMultilineImport) {
-
-            // if multiline import comes after regular group
-            if (currentGroup.length > 0) {
-                // push current group and reset
-                importGroups.push({ type: "singleline", imports: currentGroup });
-                currentGroup = [];
-            }
-
-            let multiLineImport = "";
-            let openingLineIndex = index;
-            // while the line does not contain a closing parenthesis
-            while (/\)/.test(lines[index]) === false) {
-                multiLineImport += lines[index] + "\n";
-                index++;
-            }
-            let closingLineIndex = index;
-            // add the last line with the closing parenthesis
-            multiLineImport += lines[index];
-
-            const pattern = /(from\s+[\w\.]+\s+import\s*\()([\s\S]+?)\)/i;
-            const match = multiLineImport.match(pattern);
-
-            if (match) {
-                const opening = line.match(/^\s*/)[0] + match[1];
-                const importGroup = match[2].split(',')
-                    .map(importLine => importLine.trim())
-                    .filter(importLine => importLine.length > 0)
-                    .map(importLine => importLine + ',');
-
-                for (let i = 0; i < importGroup.length; i++) {
-                    currentGroup.push({ line: importGroup[i], index: openingLineIndex + i });
-                }
-
-                // console.log(multiLineImport);
-
-                // Add the current group to the import groups
-                importGroups.push({ type: "multiline", opening: opening, imports: currentGroup, openingLineIndex: openingLineIndex, closingLineIndex: closingLineIndex });
-                currentGroup = [];
-            }
-            else {
-                const message = "Failed to match multiline import. Please report this issue on the extension GitHub page!";
-                const buttonLabel = "Report Issue";
-                vscode.window.showErrorMessage(message, buttonLabel).then((selection) => {
-                    if (selection === buttonLabel) {
-                        vscode.env.openExternal(vscode.Uri.parse('https://github.com/MyPingO/staircase-imports/issues'));
-                    }
-                });
-            }
-        }
-        else if (isImportLine) {
-            currentGroup.push({ line, index });
-        }
-        else if (currentGroup.length > 0) {
-            importGroups.push({ type: "singleline", imports: currentGroup });
-            currentGroup = [];
-        }
-
-        
-    }
-    // Add the last group if it exists
-    if (currentGroup.length > 0) {
-        importGroups.push({ type: "singleline", imports: currentGroup });
-    }
-    return importGroups;
-}
-function replaceMultiLineImportGroup(edit, importGroup, documentUri) {
-    const insertIndex = importGroup.openingLineIndex;
-    const endIndex = importGroup.closingLineIndex;
-    const config = vscode.workspace.getConfiguration('Staircase Import Formatter');
-    const sortOrder = config.get('order', 'ascending');
-
-    let sortedGroupLines = importGroup.imports.map(importGroup => importGroup.line);
-    sortedGroupLines.sort((lineA, lineB) =>
-        sortOrder === 'ascending' ? lineA.length - lineB.length : lineB.length - lineA.length
-    );
-
-    let sortedMultilineImports;
-    const openingLeadingWhitespace = importGroup.opening.match(/^\s*/)[0];
-    const closing = `${openingLeadingWhitespace})`;
-    sortedMultilineImports = importGroup.opening + '\n' + sortedGroupLines.map(line => openingLeadingWhitespace + '\t' + line).join('\n') + '\n' + closing;
-
-    console.log(sortedMultilineImports);
-
-    const endIndexLine = vscode.window.activeTextEditor.document.lineAt(endIndex);
-    const range = new vscode.Range(insertIndex, 0, endIndex, endIndexLine.text.length);
-
-    edit.replace(documentUri, range, sortedMultilineImports);
+function isCommentLine(trimmedLine, inCommentBlock) {
+	return (
+		trimmedLine.startsWith("#") ||
+		(((trimmedLine.startsWith("'''") && trimmedLine.endsWith("'''")) ||
+			(trimmedLine.startsWith('"""') && trimmedLine.endsWith('"""'))) &&
+			trimmedLine.length > 3) ||
+		inCommentBlock
+	);
 }
 
+function isStartOfMultilineImport(trimmedLine) {
+	return (
+		trimmedLine.startsWith("from ") &&
+		trimmedLine.includes("import") &&
+		trimmedLine.includes("(") &&
+		!trimmedLine.includes(")")
+	);
+}
+
+function isSinglelineImport(trimmedLine) {
+	return (
+		trimmedLine.startsWith("import ") ||
+		(trimmedLine.startsWith("from ") &&
+			trimmedLine.includes("import") &&
+			(!trimmedLine.includes("(") || trimmedLine.includes(")")))
+	);
+}
+
+function isEndOfMultilineImport(trimmedLine) {
+	return trimmedLine.startsWith(")");
+}
+
+function extractPythonImportGroups(lines) {
+	let importGroups = [];
+	let currentImportGroup = [];
+	let currentComments = [];
+
+	let inMultilineImport = false;
+	let inCommentBlock = false;
+
+	lines.forEach((line, index) => {
+		const trimmedLine = line.trim();
+
+		// Check if line is the start of a multiline comment, if it is, set inCommentBlock to true
+		if ((trimmedLine === '"""' || trimmedLine === "'''") && !inCommentBlock) {
+			inCommentBlock = true;
+		}
+
+		// Check if line is a comment, if true, add it to the current comments as an object { line, index } and continue to the next line
+
+		if (isCommentLine(trimmedLine, inCommentBlock)) {
+			currentComments.push({ line, index });
+		}
+
+		// Check if line is single line import, if true, add it to the current import group as an object { line, index, comments } and reset the current comments
+
+		if (isSinglelineImport(trimmedLine)) {
+			currentImportGroup.push({ line, index, comments: [...currentComments] });
+
+			currentComments = [];
+		}
+
+		// Check if line is not a comment or single line import, if true, add the current group (if any) to the import groups and reset the current import group and comments
+
+		if (!isCommentLine(trimmedLine, inCommentBlock) && !isSinglelineImport(trimmedLine)) {
+			// if in multiline import, do nothing
+			if (!inMultilineImport) {
+				if (currentImportGroup.length) {
+					importGroups.push({
+						type: "singleline",
+						imports: currentImportGroup,
+					});
+					currentImportGroup = [];
+				}
+				currentComments = [];
+			}
+		}
+
+		// Check if line is start of multiline import, if true, set inMultilineImport to true, add the current import group and comments to the import groups if they exist, reset the current import group and comments, and add this line to the current import group
+
+		if (isStartOfMultilineImport(trimmedLine)) {
+			inMultilineImport = true;
+
+			if (currentImportGroup.length) {
+				importGroups.push({ type: "singleline", imports: currentImportGroup });
+				currentImportGroup = [];
+			}
+			currentComments = [];
+
+			currentImportGroup.push({ line, index, comments: [...currentComments] });
+		}
+
+		//Check if line is in multiline import, if true, add the line to the current import group
+		else if (inMultilineImport && !isEndOfMultilineImport(trimmedLine)) {
+			// Check if line in the multiline import is a comment, if true, do nothing
+			if (!isCommentLine(trimmedLine, inCommentBlock)) {
+				currentImportGroup.push({
+					line,
+					index,
+					comments: [...currentComments],
+				});
+
+				currentComments = [];
+			}
+		}
+
+		// Check if line is end of multiline import, if true, add the line to the current import group, add the current import group and comments to the import groups, and reset the current import group and comments
+		else if (inMultilineImport && isEndOfMultilineImport(trimmedLine)) {
+			inMultilineImport = false;
+
+			currentImportGroup.push({ line, index, comments: [...currentComments] });
+			importGroups.push({ type: "multiline", imports: currentImportGroup });
+
+			currentImportGroup = [];
+			currentComments = [];
+		}
+
+		// Check if line is the end of a multiline comment, if true, set inCommentBlock to false
+
+		if ((trimmedLine.endsWith('"""') || trimmedLine.endsWith("'''")) && inCommentBlock) {
+			inCommentBlock = false;
+		}
+	});
+
+	// Add any remaining imports and comments to the import groups
+	// Any remaining imports must be singleline imports since multiline imports are handled when the end of a multiline import is found
+
+	if (currentImportGroup.length) {
+		importGroups.push({ type: "singleline", imports: currentImportGroup });
+	}
+
+	return importGroups;
+}
+
+function replaceMultilineImportGroup(edit, importGroup, documentUri) {
+	let startLineIndex = importGroup.imports[0].index;
+	const endLineIndex = importGroup.imports[importGroup.imports.length - 1].index;
+
+	const startLine = importGroup.imports[0].line + "\n";
+	const endLine = importGroup.imports[importGroup.imports.length - 1].line;
+
+	const imports = importGroup.imports.slice(1, importGroup.imports.length - 1);
+
+	// Make sure the last import has a comma at the end
+	const lastImportLine = imports[imports.length - 1].line;
+
+	// It might have an inline comment
+	let lastImportLineSplit = lastImportLine.split(/(?=#)|(?=\'\'\')|(?=\"\"\")/); // Split without removing delimiter from the string
+
+	// Save trailing whitespace to add back later
+	const whitespaceMatch = lastImportLineSplit[0].match(/\s+$/);
+	const trailingWhitespace = whitespaceMatch ? whitespaceMatch[0] : "";
+
+	// Get rid of trailing whitespace
+	lastImportLineSplit[0] = lastImportLineSplit[0].trimEnd();
+
+	// Add comma if it doesn't exist
+	if (!lastImportLineSplit[0].endsWith(",")) {
+		lastImportLineSplit[0] = lastImportLineSplit[0] + "," + trailingWhitespace;
+	}
+
+	// Rejoin the line
+	imports[imports.length - 1].line = lastImportLineSplit.join("");
+
+	const sortOrder = vscode.workspace.getConfiguration("Staircase Import Formatter").get("order", "ascending");
+
+	// Sort the imports within the group according to their line length
+	let sortedGroupLines = imports.sort((a, b) =>
+		sortOrder === "ascending" ? a.line.length - b.line.length : b.line.length - a.line.length,
+	);
+
+	// Initialize a new array to hold the result
+	let resultWithComments = [];
+
+	// Iterate over each importLine
+	sortedGroupLines.forEach((importLine) => {
+		// If the importLine has associated comments, add them first
+		if (importLine.comments && importLine.comments.length > 0) {
+			importLine.comments.forEach((comment) => {
+				resultWithComments.push(comment);
+				if (comment.index < startLineIndex) {
+					startLineIndex = comment.index;
+				}
+			});
+		}
+		// Then, add the importLine itself
+		resultWithComments.push(importLine);
+	});
+
+	// The closing line might also have leading comments
+	if (importGroup.imports[importGroup.imports.length - 1].comments.length > 0) {
+		importGroup.imports[importGroup.imports.length - 1].comments.forEach((comment) => {
+			resultWithComments.push(comment);
+		});
+	}
+
+	// Construct the sorted multiline import string
+	let sortedMultilineImports =
+		startLine + resultWithComments.map((importLine) => `${importLine.line}`).join("\n") + "\n" + endLine;
+
+	const endLineLength = vscode.window.activeTextEditor.document.lineAt(endLineIndex).text.length;
+	const range = new vscode.Range(startLineIndex, 0, endLineIndex, endLineLength);
+
+	edit.replace(documentUri, range, sortedMultilineImports);
+}
+
+function replaceSinglelineImportGroup(edit, importGroup, documentUri) {
+	const imports = importGroup.imports;
+	const endLineIndex = imports[imports.length - 1].index;
+	let startLineIndex = imports[0].index;
+
+	const sortOrder = vscode.workspace.getConfiguration("Staircase Import Formatter").get("order", "ascending");
+
+	// Sort the imports within the group according to their line length
+	let sortedGroupLines = imports.sort((a, b) =>
+		sortOrder === "ascending" ? a.line.length - b.line.length : b.line.length - a.line.length,
+	);
+
+	// Initialize a new array to hold the result
+	let resultWithComments = [];
+
+	// Iterate over each importLine
+	sortedGroupLines.forEach((importLine) => {
+		// If the importLine has associated comments, add them first
+		if (importLine.comments && importLine.comments.length > 0) {
+			importLine.comments.forEach((comment) => {
+				resultWithComments.push(comment);
+				if (comment.index < startLineIndex) {
+					startLineIndex = comment.index;
+				}
+			});
+		}
+		// Then, add the importLine itself
+		resultWithComments.push(importLine);
+	});
+
+	// Construct the sorted singleline import string
+	let sortedSinglelineImports = resultWithComments.map((importLine) => `${importLine.line}`).join("\n");
+
+	const endLineLength = vscode.window.activeTextEditor.document.lineAt(endLineIndex).text.length;
+	const range = new vscode.Range(startLineIndex, 0, endLineIndex, endLineLength);
+
+	edit.replace(documentUri, range, sortedSinglelineImports);
+}
 
 module.exports = {
-    getPythonImportGroups,
-    replaceMultiLineImportGroup
-}
+	extractPythonImportGroups,
+	replaceMultilineImportGroup,
+	replaceSinglelineImportGroup,
+};
