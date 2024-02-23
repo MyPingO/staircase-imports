@@ -16,17 +16,13 @@ async function createOrVerifyFile(filePath) {
 
 suite("Extension Test Suite", () => {
 	vscode.window.showInformationMessage("Start all tests.");
-	let filePath;
-	let document;
-	let editor;
 	test("Basic Javascript Imports Test", async () => {
-		// Open correct test file from test directory
-		filePath = vscode.Uri.file(__dirname + "/test.js");
+		const filePath = vscode.Uri.file(__dirname + "/test.js");
 		// Check if the file exists, create it if it doesn't
 		await createOrVerifyFile(filePath);
 
-		document = await vscode.workspace.openTextDocument(filePath);
-		editor = await vscode.window.showTextDocument(document);
+		const document = await vscode.workspace.openTextDocument(filePath);
+		const editor = await vscode.window.showTextDocument(document);
 
 		// Set content to be placed into the document
 		const content = `
@@ -61,13 +57,12 @@ suite("Extension Test Suite", () => {
 	});
 
 	test("Basic Imports Test with Leading Comments", async () => {
-		// Open correct test file from test directory
-		filePath = vscode.Uri.file(__dirname + "/test.js");
+		const filePath = vscode.Uri.file(__dirname + "/test.js");
 		// Check if the file exists, create it if it doesn't
 		await createOrVerifyFile(filePath);
 
-		document = await vscode.workspace.openTextDocument(filePath);
-		editor = await vscode.window.showTextDocument(document);
+		const document = await vscode.workspace.openTextDocument(filePath);
+		const editor = await vscode.window.showTextDocument(document);
 
 		// Set content to be placed into the document
 		const content = `
@@ -108,13 +103,12 @@ suite("Extension Test Suite", () => {
 	});
 
 	test("Multiline Javascript Imports Test", async () => {
-		// Open correct test file from test directory
-		filePath = vscode.Uri.file(__dirname + "/test.js");
+		const filePath = vscode.Uri.file(__dirname + "/test.js");
 		// Check if the file exists, create it if it doesn't
 		await createOrVerifyFile(filePath);
 
-		document = await vscode.workspace.openTextDocument(filePath);
-		editor = await vscode.window.showTextDocument(document);
+		const document = await vscode.workspace.openTextDocument(filePath);
+		const editor = await vscode.window.showTextDocument(document);
 
 		// Set content to be placed into the document
 		const content = `
@@ -153,13 +147,12 @@ suite("Extension Test Suite", () => {
 	});
 
 	test("Javascript Multiline Imports Test with Leading Comments", async () => {
-		// Open correct test file from test directory
-		filePath = vscode.Uri.file(__dirname + "/test.js");
+		const filePath = vscode.Uri.file(__dirname + "/test.js");
 		// Check if the file exists, create it if it doesn't
 		await createOrVerifyFile(filePath);
 
-		document = await vscode.workspace.openTextDocument(filePath);
-		editor = await vscode.window.showTextDocument(document);
+		const document = await vscode.workspace.openTextDocument(filePath);
+		const editor = await vscode.window.showTextDocument(document);
 
 		// Set content to be placed into the document
 		const content = `
@@ -206,13 +199,12 @@ suite("Extension Test Suite", () => {
 	});
 
 	test("Javascript Imports Test with Trailing Comments", async () => {
-		// Open correct test file from test directory
-		filePath = vscode.Uri.file(__dirname + "/test.js");
+		const filePath = vscode.Uri.file(__dirname + "/test.js");
 		// Check if the file exists, create it if it doesn't
 		await createOrVerifyFile(filePath);
 
-		document = await vscode.workspace.openTextDocument(filePath);
-		editor = await vscode.window.showTextDocument(document);
+		const document = await vscode.workspace.openTextDocument(filePath);
+		const editor = await vscode.window.showTextDocument(document);
 
 		// Set content to be placed into the document
 		const content = `
