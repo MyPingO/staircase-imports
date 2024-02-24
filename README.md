@@ -2,8 +2,8 @@
 
 ## Staircase Imports is currently in development. Expect bugs and missing features.
 
-Contributions and suggestions are welcome! Feel free to open an issue or submit a pull request on our [GitHub repository](https://github.com/MyPingO/staircase-imports).
-While I work on handling edge cases, be sure to write your code in a proper format to avoid confusing the extension :).
+Contributions and suggestions are welcome! Feel free to open an issue or submit a pull request on our [GitHub repository](https://github.com/MyPingO/staircase-imports).  
+You can find the contribution guidelines [here](CONTRIBUTING.md).
 
 ![Staircase Imports Showcase GIF](https://github.com/MyPingO/staircase-imports/raw/master/media/Demo.gif)
 
