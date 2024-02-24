@@ -19,6 +19,7 @@ Simply work on your Python files as usual. When you save your file, Staircase Im
 
 - Python (fully supported)
 - JavaScript/TypeScript (fully supported)
+- Java (fully supported)
 - Support for other languages are in the works.
 
 ## Installation
@@ -118,6 +119,33 @@ from library import (
   somethingElse,
   anotherThing 
 ) # <-- Correct bracket placement
+```
+
+**2. When writing an import statement in a multi-line string, the extension will format the string as if it were an import statement.**
+
+Before formatting:
+
+```java
+//Java
+
+String myString = """
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+""";
+```
+
+After formatting:
+
+```java
+//Java
+
+String myString = """
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+""";
+// The string is formatted in a staircase like structure
 ```
 
 ---

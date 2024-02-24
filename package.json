@@ -33,7 +33,8 @@
   "activationEvents": [
     "onLanguage:python",
     "onLanguage:javascript",
-    "onLanguage:typescript"
+    "onLanguage:typescript",
+    "onLanguage:java"
   ],
   "main": "./extension.js",
   "contributes": {

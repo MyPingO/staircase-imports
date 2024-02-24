@@ -1,12 +1,13 @@
 const vscode = require("vscode");
 const pythonFormatter = require("./formatters/pythonFormatter");
 const javascriptFormatter = require("./formatters/javascriptFormatter");
+const javaFormatter = require("./formatters/javaFormatter");
 
-const IMPORT_PATTERNS = {
-	python: /^\s*(import .*|from .* import(.*\n)*.*);?$/gm,
-	javascript: /^\s*import .*;?$/gm,
-	typescript: /^\s*import .*;?$/gm,
-	// 'java': /^\s*import .*;$/gm,
+const SUPPORTED_LANGUAGES = [
+	"python",
+	"javascript",
+	"typescript",
+	"java",
 	// 'csharp': /^\s*using .*;$/gm,
 	// 'c': /^\s*#include .*$/gm,
 	// 'cpp': /^\s*#include .*$/gm,
@@ -29,7 +30,7 @@ const IMPORT_PATTERNS = {
 	// 'clojure': /^\s*\(require .*$/gm,
 	// 'groovy': /^\s*import .*$/gm,
 	// 'scala': /^\s*import .*$/gm,
-};
+];
 
 function activate(context) {
 	vscode.window.showInformationMessage("Staircase Import Formatter Activated!");
@@ -46,10 +47,9 @@ function activate(context) {
 
 function formatOnSave(event) {
 	const document = event.document;
-	const importPattern = IMPORT_PATTERNS[document.languageId];
 	const languageId = document.languageId;
 	const uri = document.uri;
-	if (importPattern) {
+	if (SUPPORTED_LANGUAGES.includes(languageId)) {
 		let edit;
 		let importGroups;
 		const documentText = document.getText();
@@ -86,8 +86,17 @@ function formatOnSave(event) {
 					}
 				}
 				break;
+			case "java":
+				importGroups = javaFormatter.extractJavaImportGroups(lines);
+				edit = new vscode.WorkspaceEdit();
+				for (let i = 0; i < importGroups.length; i++) {
+					const imports = importGroups[i];
+					if (imports.length > 1) {
+						javaFormatter.replaceSinglelineImportGroup(edit, imports, uri);
+					}
+				}
+				break;
 			default:
-				edit = formatGenericDocument(document, importPattern);
 				break;
 		}
 		// I have no idea if any of this below code works
@@ -98,60 +107,6 @@ function formatOnSave(event) {
 			vscode.window.showErrorMessage("Failed to save all documents");
 		}
 	}
-}
-
-function formatGenericDocument(document, importPattern) {
-	const lines = document.getText().split(/\r?\n/); // \r? for windows compatibility
-	const importGroups = extractImportGroups(lines, importPattern);
-
-	const edit = new vscode.WorkspaceEdit();
-	importGroups.forEach((group) => {
-		if (group.length > 1) {
-			replaceSingleLineImportGroup(edit, group, lines, document.uri);
-		}
-	});
-
-	return edit;
-}
-
-function extractImportGroups(lines, importPattern) {
-	let importGroups = [];
-	let currentGroup = [];
-
-	for (let index = 0; index < lines.length; index++) {
-		const line = lines[index];
-		const isImportLine = new RegExp(importPattern).test(line);
-
-		if (isImportLine) {
-			currentGroup.push({ line, index });
-		} else if (currentGroup.length > 0) {
-			importGroups.push(currentGroup);
-			currentGroup = [];
-		}
-	}
-
-	if (currentGroup.length > 0) {
-		importGroups.push(currentGroup);
-	}
-
-	return importGroups;
-}
-function replaceSingleLineImportGroup(edit, importGroup, document, documentUri) {
-	const config = vscode.workspace.getConfiguration("Staircase Import Formatter");
-	const sortOrder = config.get("order", "ascending");
-	const startLineIndex = importGroup[0].index;
-	const endLineIndex = importGroup[importGroup.length - 1].index;
-	const lines = document.getText().split(/\r?\n/); // \r? for windows compatibility
-	const range = new vscode.Range(startLineIndex, 0, endLineIndex, lines[endLineIndex].length);
-
-	let sortedGroupLines = importGroup.map((importData) => importData.line);
-	sortedGroupLines.sort((lineA, lineB) =>
-		sortOrder === "ascending" ? lineA.length - lineB.length : lineB.length - lineA.length,
-	);
-
-	const sortedImportsText = sortedGroupLines.join("\n");
-
-	edit.replace(documentUri, range, sortedImportsText);
 }
 
 function deactivate() {}

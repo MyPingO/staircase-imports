@@ -3,6 +3,10 @@
 All notable changes to the "staircase-imports" extension will be documented in this file.
 
 ## Release Notes
+- 2 / 24 / 2024
+  - Added support for Java.
+  - (Developers Only) Added tests for Java formatting.
+
 - 2 / 23 / 2024
   - Refactored Python formatting to be cleaner and more robust in handling different edge cases.
   - Bug fixes mentioned in the README for python formatting have been resolved.
