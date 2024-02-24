@@ -7,7 +7,6 @@ Thank you for your interest in contributing to Staircase Imports! Contributions 
 *If you're adding a new feature, consider [opening an issue](https://github.com/MyPingO/staircase-imports/issues/new/choose) to discuss the feature before starting work.  This can help ensure that your changes are aligned with the project's goals and that you're not duplicating work that's already in progress.*
 
 
-
 ## Step 1: Fork the Repository
 
 Begin by forking the main repository on GitHub. This creates a personal copy of the project for you to work on.

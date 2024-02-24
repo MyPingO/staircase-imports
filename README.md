@@ -65,58 +65,61 @@ This extension is licensed under [MIT License](LICENSE).
 
 ## Known Issues
 
-### These issues are only for Python files
+**1. When declaring multi-line imports, pay attention to where you place opening/closing brackets or parentheses.**  
 
-1. Multi-line imports should all end in a comma ',' for the extension to work properly. Otherwise the extension might format your imports incorrectly, causing an error.
+The extension will skip over multi-line imports that don't use the correct bracket placement.  
+Examples of incorrect bracket placement are shown below:
 
-Example:
+**Incorrect bracket placement:**
 
-Before Format:
+```javascript
+//JavaScript/TypeScript
 
-```python
-from library import ( 
-  three,
-  two,
-  one # missing comma
-)
+import // <-- Nothing comes after the import statement
+{ // <--- This bracket placement is not currently supported
+  something,
+  somethingElse,
+  anotherThing
+} from 'somewhere';
 ```
 
-After Format:
+**Correct bracket placement:**
+
+```javascript
+//JavaScript/TypeScript
+
+import { // <-- Correct bracket placement
+  something,
+  somethingElse,
+  anotherThing
+} from 'somewhere';
+```
+
+Same goes for Python:
+
+**Incorrect bracket placement:**
 
 ```python
+#Python
+
 from library import (
-	two,
-	one,
-	three,
-) # added an extra closing parenthesis (error)
-)
+  something,
+  somethingElse,
+  anotherThing ) # <-- Incorrect bracket placement
 ```
 
-2. In some cases, having a comment within a multi-line import might cause the extension to format the import incorrectly. Consider using inline-comments instead.
-
-Example:
-
-Before Format:
+**Correct bracket placement:**
 
 ```python
-from module import (
-    # comment <-- should stay on the same line
-    one,
-    two,
-    three
-)
+#Python
+
+from library import (
+  something,
+  somethingElse,
+  anotherThing 
+) # <-- Correct bracket placement
 ```
 
-After Format:
-
-```python
-from module import (
-    two,
-    three,
-    # comment <-- move lines (it thinks it's an import)
-    one,
-)
-```
 ---
 <br>
 

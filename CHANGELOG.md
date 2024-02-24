@@ -3,8 +3,15 @@
 All notable changes to the "staircase-imports" extension will be documented in this file.
 
 ## Release Notes
+- 2 / 23 / 2024
+  - Refactored Python formatting to be cleaner and more robust in handling different edge cases.
+  - Bug fixes mentioned in the README for python formatting have been resolved.
+  - New known issue for general formatting has been added to the README.
+  - (Developers Only) Added tests for Python formatting.
+
 - 2 / 22 / 2024
   - Refactored JavaScript/TypeScript formatting to be cleaner and more robust in handling different edge cases.
+  - Added known issues for Python formatting to the README.
   - (Developers Only) Added tests for JavaScript/TypeScript formatting.
   - (Developers Only) Added prettier to format codebase.
 
