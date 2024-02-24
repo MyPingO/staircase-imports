@@ -17,14 +17,16 @@ function isStartOfMultilineImport(trimmedLine) {
 
 function isSinglelineImport(trimmedLine) {
 	return (
+		// import { ... } from '...';
 		(trimmedLine.startsWith("import ") &&
 			trimmedLine.includes("{") &&
 			trimmedLine.includes("}") &&
-			!trimmedLine.includes("from")) || // import { ... } from '...';
+			!trimmedLine.includes("from")) ||
+
 		/* 
-        import ... from '...';
-        import ...; 
-        */
+		import ... from '...';
+		import ...;
+		*/
 		(trimmedLine.startsWith("import ") && !isStartOfMultilineImport(trimmedLine))
 	);
 }
@@ -44,15 +46,26 @@ function extractJavascriptImportGroups(lines) {
 	lines.forEach((line, index) => {
 		const trimmedLine = line.trim();
 
-		// Check if line is the start of a multiline comment, if it is, set inCommentBlock to true
+		// Check if line is the start of a multiline comment, if it is, set inCommentBlock to true, push the current comments to the current comments stack, and continue to the next line
+
 		if (trimmedLine.startsWith("/*") && !trimmedLine.endsWith("*/")) {
 			inCommentBlock = true;
+			currentComments.push({ line, index });
+			return;
+		}
+		// Check if line is the end of a multiline comment, if true, set inCommentBlock to false
+
+		if (inCommentBlock && trimmedLine.endsWith("*/")) {
+			inCommentBlock = false;
+			currentComments.push({ line, index });
+			return;
 		}
 
-		// Check if line is a comment, if true, add it to the current comments as an object { line, index } and continue to the next line
+		// Check if line is a single-line comment, if true, add it to the current comments as an object { line, index } and continue to the next line
 
 		if (isCommentLine(trimmedLine, inCommentBlock)) {
 			currentComments.push({ line, index });
+			return;
 		}
 
 		// Check if line is single line import, if true, add it to the current import group as an object { line, index, comments } and reset the current comments
@@ -116,12 +129,6 @@ function extractJavascriptImportGroups(lines) {
 
 			currentImportGroup = [];
 			currentComments = [];
-		}
-
-		// Check if line is the end of a multiline comment, if true, set inCommentBlock to false
-
-		if (inCommentBlock && trimmedLine.endsWith("*/")) {
-			inCommentBlock = false;
 		}
 	});
 

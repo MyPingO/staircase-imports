@@ -1,5 +1,12 @@
 const vscode = require("vscode");
 
+function isMultiCommentLine(trimmedLine) {
+	return (
+		(trimmedLine.startsWith('"""') && trimmedLine.endsWith('"""') && trimmedLine !== '"""') ||
+		(trimmedLine.startsWith("'''") && trimmedLine.endsWith("'''") && trimmedLine !== "'''")
+	);
+}
+
 function isCommentLine(trimmedLine, inCommentBlock) {
 	return (
 		trimmedLine.startsWith("#") ||
@@ -44,14 +51,26 @@ function extractPythonImportGroups(lines) {
 		const trimmedLine = line.trim();
 
 		// Check if line is the start of a multiline comment, if it is, set inCommentBlock to true
-		if ((trimmedLine === '"""' || trimmedLine === "'''") && !inCommentBlock) {
+
+		if (isMultiCommentLine(trimmedLine) && !inCommentBlock) {
 			inCommentBlock = true;
+			currentComments.push({ line, index });
+			return;
 		}
 
-		// Check if line is a comment, if true, add it to the current comments as an object { line, index } and continue to the next line
+		// Check if line is the end of a multiline comment, if true, set inCommentBlock to false
+
+		if ((trimmedLine.endsWith('"""') || trimmedLine.endsWith("'''")) && inCommentBlock) {
+			inCommentBlock = false;
+			currentComments.push({ line, index });
+			return;
+		}
+
+		// Check if line is a single-line comment, if true, add it to the current comments as an object { line, index } and continue to the next line
 
 		if (isCommentLine(trimmedLine, inCommentBlock)) {
 			currentComments.push({ line, index });
+			return;
 		}
 
 		// Check if line is single line import, if true, add it to the current import group as an object { line, index, comments } and reset the current comments
@@ -117,11 +136,7 @@ function extractPythonImportGroups(lines) {
 			currentComments = [];
 		}
 
-		// Check if line is the end of a multiline comment, if true, set inCommentBlock to false
-
-		if ((trimmedLine.endsWith('"""') || trimmedLine.endsWith("'''")) && inCommentBlock) {
-			inCommentBlock = false;
-		}
+		
 	});
 
 	// Add any remaining imports and comments to the import groups

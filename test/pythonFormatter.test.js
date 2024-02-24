@@ -12,7 +12,7 @@ async function createOrVerifyFile(filePath) {
 }
 
 suite("Extension Test Suite", () => {
-	vscode.window.showInformationMessage("Start all tests.");
+	vscode.window.showInformationMessage("Start all Python tests.");
 
 	test("Basic Python Imports Test", async () => {
 		const filePath = vscode.Uri.file(__dirname + "/test.py");
@@ -177,8 +177,8 @@ suite("Extension Test Suite", () => {
 
 		// Python multiline imports with comments
 		const content = `
-        import TEST as T # This is a comment
         import T # This is a comment
+        import TEST as T # This is a comment
         from test import test # This is a comment
 
         from TEST import (

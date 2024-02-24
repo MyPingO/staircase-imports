@@ -15,7 +15,7 @@ async function createOrVerifyFile(filePath) {
 }
 
 suite("Extension Test Suite", () => {
-	vscode.window.showInformationMessage("Start all tests.");
+	vscode.window.showInformationMessage("Start all JavaScript tests.");
 	test("Basic Javascript Imports Test", async () => {
 		const filePath = vscode.Uri.file(__dirname + "/test.js");
 		// Check if the file exists, create it if it doesn't
