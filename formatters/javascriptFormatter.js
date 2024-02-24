@@ -159,8 +159,11 @@ function replaceMultilineImportGroup(edit, importGroup, documentUri) {
 
 	// Add comma if it doesn't exist
 	if (!lastImportLineSplit[0].endsWith(",")) {
-		lastImportLineSplit[0] = lastImportLineSplit[0] + "," + trailingWhitespace;
+		lastImportLineSplit[0] = lastImportLineSplit[0] + ",";
 	}
+
+	// Add trailing whitespace back
+	lastImportLineSplit[0] = lastImportLineSplit[0] + trailingWhitespace;
 
 	// Rejoin the line
 	imports[imports.length - 1].line = lastImportLineSplit.join("");
