@@ -2,7 +2,7 @@
   "name": "staircase-import-formatter",
   "displayName": "Staircase Imports",
   "description": "Format your library imports in a staircase pattern",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "engines": {
     "vscode": "^1.85.0"
   },
