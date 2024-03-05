@@ -249,4 +249,58 @@ suite("Extension Test Suite", () => {
 		// Close the document
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	});
+	
+	test("Javascript Imports in String", async () => {
+		const filePath = vscode.Uri.file(__dirname + "/test.js");
+		// Check if the file exists, create it if it doesn't
+		await createOrVerifyFile(filePath);
+
+		const document = await vscode.workspace.openTextDocument(filePath);
+		const editor = await vscode.window.showTextDocument(document);
+
+		// Set content to be placed into the document
+		const content = `
+		const test = \`
+		import { 
+			TEST,
+			T, //lol
+			test
+		} from "TEST";
+		import test from "test";
+		import { T } from "T";
+		import TEST from "TEST";
+		\`;
+		`;
+
+		// Replace all contents of the file with the test
+		await editor.edit((editBuilder) => {
+			editBuilder.replace(new vscode.Range(0, 0, document.lineCount, 0), content);
+		});
+
+		// Save the document
+		await document.save();
+
+		// Set expected content
+		const expectedContent = `
+		const test = \`
+		import { 
+			TEST,
+			T, //lol
+			test
+		} from "TEST";
+		import test from "test";
+		import { T } from "T";
+		import TEST from "TEST";
+		\`;
+		`;
+
+		// Get the document's content
+		const documentContent = document.getText().replace(/\r/g, ""); // replace(/\r/g, '') for windows compatibility
+
+		// Test if the content is as expected
+		assert.strictEqual(documentContent, expectedContent);
+
+		// Close the document
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+	});
 });

@@ -17,17 +17,21 @@ function isStartOfMultilineImport(trimmedLine) {
 
 function isSinglelineImport(trimmedLine) {
 	return (
-		// import { ... } from '...';
-		(trimmedLine.startsWith("import ") &&
-			trimmedLine.includes("{") &&
-			trimmedLine.includes("}") &&
-			!trimmedLine.includes("from")) ||
+		(
+			// import { ... } from '...';
+			trimmedLine.startsWith("import ") &&
+			(
+				(trimmedLine.includes("{") &&
+				trimmedLine.includes("}") &&
+				!trimmedLine.includes("from")) ||
 
-		/* 
-		import ... from '...';
-		import ...;
-		*/
-		(trimmedLine.startsWith("import ") && !isStartOfMultilineImport(trimmedLine))
+				/* 
+				import ... from '...';
+				import ...;
+				*/
+				!isStartOfMultilineImport(trimmedLine)
+			)
+		)
 	);
 }
 
@@ -35,37 +39,68 @@ function isEndOfMultilineImport(trimmedLine) {
 	return trimmedLine.startsWith("}");
 }
 
-function extractJavascriptImportGroups(lines) {
+function pushCurrentGroupToImportGroups(importGroups, type, currentImportGroup, currentComments) {
+	if (currentImportGroup.length) {
+		importGroups.push({ type: type, imports: [...currentImportGroup]});
+		currentImportGroup.length = 0;
+		currentComments.length = 0;
+	}
+}
+
+function extractJavascriptImportGroups(lines, multilineStrings = new Map()) {
 	let importGroups = [];
 	let currentImportGroup = [];
 	let currentComments = [];
 
 	let inMultilineImport = false;
 	let inCommentBlock = false;
+	let inMultilineString = false;
 
-	lines.forEach((line, index) => {
+	for (let index = 0; index < lines.length; index++) {
+		const line = lines[index];
 		const trimmedLine = line.trim();
+
+		// Check if line is the start of a multiline string, if it is, continue to the end line of the multiline string
+
+		if (multilineStrings) {
+			if (multilineStrings.has(index)) {
+				inMultilineString = true;
+				// Set the index to the end index of the multiline string - 1 because the loop will increment the index
+				// This is to check if the end line of the multiline string isn't also the start of another multiline string
+				index = multilineStrings.get(index) - 1;
+				
+				// push any potential imports in the current group to the import groups
+				pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
+
+				continue;
+			}
+			// If the line isn't the start of a multiline string, reset inMultilineString flag and continue
+			else if (inMultilineString) {
+				inMultilineString = false;
+				continue;
+			}
+		}
 
 		// Check if line is the start of a multiline comment, if it is, set inCommentBlock to true, push the current comments to the current comments stack, and continue to the next line
 
 		if (trimmedLine.startsWith("/*") && !trimmedLine.endsWith("*/")) {
 			inCommentBlock = true;
 			currentComments.push({ line, index });
-			return;
+			continue;
 		}
 		// Check if line is the end of a multiline comment, if true, set inCommentBlock to false
 
 		if (inCommentBlock && trimmedLine.endsWith("*/")) {
 			inCommentBlock = false;
 			currentComments.push({ line, index });
-			return;
+			continue;
 		}
 
 		// Check if line is a single-line comment, if true, add it to the current comments as an object { line, index } and continue to the next line
 
 		if (isCommentLine(trimmedLine, inCommentBlock)) {
 			currentComments.push({ line, index });
-			return;
+			continue;
 		}
 
 		// Check if line is single line import, if true, add it to the current import group as an object { line, index, comments } and reset the current comments
@@ -81,14 +116,8 @@ function extractJavascriptImportGroups(lines) {
 		if (!isCommentLine(trimmedLine, inCommentBlock) && !isSinglelineImport(trimmedLine)) {
 			// if in multiline import, do nothing
 			if (!inMultilineImport) {
-				if (currentImportGroup.length) {
-					importGroups.push({
-						type: "singleline",
-						imports: currentImportGroup,
-					});
-					currentImportGroup = [];
-				}
-				currentComments = [];
+				// push any potential imports in the current group to the import groups
+				pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
 			}
 		}
 
@@ -97,16 +126,14 @@ function extractJavascriptImportGroups(lines) {
 		if (isStartOfMultilineImport(trimmedLine)) {
 			inMultilineImport = true;
 
-			if (currentImportGroup.length) {
-				importGroups.push({ type: "singleline", imports: currentImportGroup });
-				currentImportGroup = [];
-			}
-			currentComments = [];
+			// push any potential imports in the current group to the import groups
+			pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
 
 			currentImportGroup.push({ line, index, comments: [...currentComments] });
 		}
 
 		//Check if line is in multiline import, if true, add the line to the current import group
+		
 		else if (inMultilineImport && !isEndOfMultilineImport(trimmedLine)) {
 			// Check if line in the multiline import is a comment, if true, do nothing
 			if (!isCommentLine(trimmedLine, inCommentBlock)) {
@@ -121,23 +148,19 @@ function extractJavascriptImportGroups(lines) {
 		}
 
 		// Check if line is end of multiline import, if true, add the line to the current import group, add the current import group and comments to the import groups, and reset the current import group and comments
+
 		else if (inMultilineImport && isEndOfMultilineImport(trimmedLine)) {
 			inMultilineImport = false;
 
 			currentImportGroup.push({ line, index, comments: [...currentComments] });
-			importGroups.push({ type: "multiline", imports: currentImportGroup });
-
-			currentImportGroup = [];
-			currentComments = [];
+			pushCurrentGroupToImportGroups(importGroups, "multiline", currentImportGroup, currentComments);
 		}
-	});
+	};
 
 	// Add any remaining imports and comments to the import groups
 	// Any remaining imports must be singleline imports since multiline imports are handled when the end of a multiline import is found
 
-	if (currentImportGroup.length) {
-		importGroups.push({ type: "singleline", imports: currentImportGroup });
-	}
+	pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
 
 	return importGroups;
 }
