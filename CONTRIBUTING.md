@@ -40,9 +40,18 @@ This naming convention helps in quickly identifying the focus and scope of the c
 ## Step 4: Make Your Changes
 
 With your environment set up and your branch created, you're ready to start making changes.  
-Feel free to add new features, fix bugs, or improve the codebase in any other way!
+Feel free to add new features, fix bugs, or improve the codebase in any other way!  
+If you are adding support for a new language, please ensure that you update the [package.json](https://github.com/MyPingO/staircase-imports/blob/3caaa8bc56e733e7964fdfd570c73964e36fd7d2/package.json#L33) `"activationEvents"` for that language.
 
-## Step 5: Test Your Changes
+## Step 5: Format Your Code
+
+Prettier is used to format the codebase. Simply run the following command in the projects root directory to format your code:
+
+```shell
+npx prettier --write "**/*.{js,mjs}"
+```
+
+## Step 6: Test Your Changes
 
 Before submitting your changes, it's important to test them locally to ensure they work as expected. 
 
@@ -58,7 +67,7 @@ npm test
 
 If everything looks good, you're ready to commit your changes.
 
-## Step 6: Commit Your Changes
+## Step 7: Commit Your Changes
 
 After you've made your changes, commit them to your branch using a descriptive message:
 
@@ -66,7 +75,7 @@ After you've made your changes, commit them to your branch using a descriptive m
 git commit -am "A concise, descriptive commit message"
 ```
 
-## Step 7: Push Your Branch
+## Step 8: Push Your Branch
 
 Push your branch and the accompanying changes to your GitHub fork:
 
@@ -74,7 +83,7 @@ Push your branch and the accompanying changes to your GitHub fork:
 git push origin your-branch-name
 ```
 
-## Step 8: Open a Pull Request
+## Step 9: Open a Pull Request
 
 Once your changes are pushed, navigate to the [original Staircase Imports repository on GitHub](https://github.com/MyPingO/staircase-imports). You should see a prompt to open a pull request from your new branch. Click the "Compare & pull request" button, then fill out the pull request form with a clear description of your changes.
 
