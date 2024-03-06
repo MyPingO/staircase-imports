@@ -10,28 +10,59 @@ function isSinglelineImport(trimmedLine) {
 	return trimmedLine.startsWith("import ");
 }
 
-function extractJavaImportGroups(lines) {
+function pushCurrentGroupToImportGroups(importGroups, type, currentImportGroup, currentComments) {
+	if (currentImportGroup.length) {
+		importGroups.push({ type: type, imports: [...currentImportGroup] });
+		currentImportGroup.length = 0;
+	}
+	currentComments.length = 0;
+}
+
+function extractJavaImportGroups(lines, multilineStringsMap) {
 	let importGroups = [];
 	let currentImportGroup = [];
 	let currentComments = [];
 
 	let inCommentBlock = false;
+	let inMultilineString = false;
 
-	lines.forEach((line, index) => {
+	for (let index = 0; index < lines.length; index++) {
+		const line = lines[index];
 		const trimmedLine = line.trim();
+
+		// Check if line is the start of a multiline string, if it is, continue to the end line of the multiline string
+
+		if (multilineStringsMap) {
+			if (multilineStringsMap.has(index)) {
+				inMultilineString = true;
+				// Set the index to the end index of the multiline string - 1 because the loop will increment the index
+				// This is to check if the end line of the multiline string isn't also the start of another multiline string
+				index = multilineStringsMap.get(index) - 1;
+
+				// push any potential imports in the current group to the import groups
+				pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
+
+				continue;
+			}
+			// If the line isn't the start of a multiline string, reset inMultilineString flag and continue
+			else if (inMultilineString) {
+				inMultilineString = false;
+				continue;
+			}
+		}
 
 		// Check if line is the start of a multiline comment, if it is, set inCommentBlock to true
 		if (trimmedLine.startsWith("/*") && !trimmedLine.endsWith("*/")) {
 			inCommentBlock = true;
-            currentComments.push({ line, index });
-            return;
+			currentComments.push({ line, index });
+			continue;
 		}
 
-        // Check if line is the end of a multiline comment, if it is, set inCommentBlock to false
+		// Check if line is the end of a multiline comment, if it is, set inCommentBlock to false
 		if (inCommentBlock && trimmedLine.endsWith("*/")) {
 			inCommentBlock = false;
-            currentComments.push({ line, index });
-            return;
+			currentComments.push({ line, index });
+			continue;
 		}
 
 		// Check if line is a single-line comment, if true, add it to the current comments as an object { line, index } and continue to the next line
@@ -46,7 +77,6 @@ function extractJavaImportGroups(lines) {
 		}
 
 		// Check if line is not a comment or single line import, if true, add the current group (if any) to the import groups and reset the current import group and comments
-
 		else {
 			if (currentImportGroup.length > 0) {
 				importGroups.push(currentImportGroup);
@@ -54,7 +84,7 @@ function extractJavaImportGroups(lines) {
 			}
 			currentComments = [];
 		}
-	});
+	}
 
 	if (currentImportGroup.length > 0) {
 		importGroups.push(currentImportGroup);
@@ -102,6 +132,6 @@ function replaceSinglelineImportGroup(edit, imports, documentUri) {
 }
 
 module.exports = {
-    extractJavaImportGroups,
-    replaceSinglelineImportGroup,
+	extractJavaImportGroups,
+	replaceSinglelineImportGroup,
 };

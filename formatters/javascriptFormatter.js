@@ -17,21 +17,14 @@ function isStartOfMultilineImport(trimmedLine) {
 
 function isSinglelineImport(trimmedLine) {
 	return (
-		(
-			// import { ... } from '...';
-			trimmedLine.startsWith("import ") &&
-			(
-				(trimmedLine.includes("{") &&
-				trimmedLine.includes("}") &&
-				!trimmedLine.includes("from")) ||
-
-				/* 
+		// import { ... } from '...';
+		trimmedLine.startsWith("import ") &&
+		((trimmedLine.includes("{") && trimmedLine.includes("}") && !trimmedLine.includes("from")) ||
+			/* 
 				import ... from '...';
 				import ...;
 				*/
-				!isStartOfMultilineImport(trimmedLine)
-			)
-		)
+			!isStartOfMultilineImport(trimmedLine))
 	);
 }
 
@@ -41,7 +34,7 @@ function isEndOfMultilineImport(trimmedLine) {
 
 function pushCurrentGroupToImportGroups(importGroups, type, currentImportGroup, currentComments) {
 	if (currentImportGroup.length) {
-		importGroups.push({ type: type, imports: [...currentImportGroup]});
+		importGroups.push({ type: type, imports: [...currentImportGroup] });
 		currentImportGroup.length = 0;
 	}
 	currentComments.length = 0;
@@ -68,7 +61,7 @@ function extractJavascriptImportGroups(lines, multilineStringsMap) {
 				// Set the index to the end index of the multiline string - 1 because the loop will increment the index
 				// This is to check if the end line of the multiline string isn't also the start of another multiline string
 				index = multilineStringsMap.get(index) - 1;
-				
+
 				// push any potential imports in the current group to the import groups
 				pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
 
@@ -133,7 +126,6 @@ function extractJavascriptImportGroups(lines, multilineStringsMap) {
 		}
 
 		//Check if line is in multiline import, if true, add the line to the current import group
-		
 		else if (inMultilineImport && !isEndOfMultilineImport(trimmedLine)) {
 			// Check if line in the multiline import is a comment, if true, do nothing
 			if (!isCommentLine(trimmedLine, inCommentBlock)) {
@@ -148,14 +140,13 @@ function extractJavascriptImportGroups(lines, multilineStringsMap) {
 		}
 
 		// Check if line is end of multiline import, if true, add the line to the current import group, add the current import group and comments to the import groups, and reset the current import group and comments
-
 		else if (inMultilineImport && isEndOfMultilineImport(trimmedLine)) {
 			inMultilineImport = false;
 
 			currentImportGroup.push({ line, index, comments: [...currentComments] });
 			pushCurrentGroupToImportGroups(importGroups, "multiline", currentImportGroup, currentComments);
 		}
-	};
+	}
 
 	// Add any remaining imports and comments to the import groups
 	// Any remaining imports must be singleline imports since multiline imports are handled when the end of a multiline import is found

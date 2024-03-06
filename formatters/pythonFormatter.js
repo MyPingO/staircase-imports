@@ -39,23 +39,52 @@ function isEndOfMultilineImport(trimmedLine) {
 	return trimmedLine.startsWith(")");
 }
 
-function extractPythonImportGroups(lines) {
+function pushCurrentGroupToImportGroups(importGroups, type, currentImportGroup, currentComments) {
+	if (currentImportGroup.length) {
+		importGroups.push({ type: type, imports: [...currentImportGroup] });
+		currentImportGroup.length = 0;
+		currentComments.length = 0;
+	}
+}
+
+function extractPythonImportGroups(lines, multilineStringsMap) {
 	let importGroups = [];
 	let currentImportGroup = [];
 	let currentComments = [];
 
 	let inMultilineImport = false;
 	let inCommentBlock = false;
+	let inMultilineString = false;
 
-	lines.forEach((line, index) => {
+	for (let index = 0; index < lines.length; index++) {
+		const line = lines[index];
 		const trimmedLine = line.trim();
+
+		if (multilineStringsMap) {
+			if (multilineStringsMap.has(index)) {
+				inMultilineString = true;
+				// Set the index to the end index of the multiline string - 1 because the loop will increment the index
+				// This is to check if the end line of the multiline string isn't also the start of another multiline string
+				index = multilineStringsMap.get(index) - 1;
+
+				// push any potential imports in the current group to the import groups
+				pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
+
+				continue;
+			}
+			// If the line isn't the start of a multiline string, reset inMultilineString flag and continue
+			else if (inMultilineString) {
+				inMultilineString = false;
+				continue;
+			}
+		}
 
 		// Check if line is the start of a multiline comment, if it is, set inCommentBlock to true
 
 		if (isMultiCommentLine(trimmedLine) && !inCommentBlock) {
 			inCommentBlock = true;
 			currentComments.push({ line, index });
-			return;
+			continue;
 		}
 
 		// Check if line is the end of a multiline comment, if true, set inCommentBlock to false
@@ -63,14 +92,14 @@ function extractPythonImportGroups(lines) {
 		if ((trimmedLine.endsWith('"""') || trimmedLine.endsWith("'''")) && inCommentBlock) {
 			inCommentBlock = false;
 			currentComments.push({ line, index });
-			return;
+			continue;
 		}
 
 		// Check if line is a single-line comment, if true, add it to the current comments as an object { line, index } and continue to the next line
 
 		if (isCommentLine(trimmedLine, inCommentBlock)) {
 			currentComments.push({ line, index });
-			return;
+			continue;
 		}
 
 		// Check if line is single line import, if true, add it to the current import group as an object { line, index, comments } and reset the current comments
@@ -135,9 +164,7 @@ function extractPythonImportGroups(lines) {
 			currentImportGroup = [];
 			currentComments = [];
 		}
-
-		
-	});
+	}
 
 	// Add any remaining imports and comments to the import groups
 	// Any remaining imports must be singleline imports since multiline imports are handled when the end of a multiline import is found

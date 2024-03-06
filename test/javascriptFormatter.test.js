@@ -38,6 +38,8 @@ suite("Extension Test Suite", () => {
 
 		// Save the document
 		await document.save();
+		// give time to update the document
+		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		// Set expected content
 		const expectedContent = `
@@ -81,6 +83,8 @@ suite("Extension Test Suite", () => {
 
 		// Save the document
 		await document.save();
+		// give time to update the document
+		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		// Set expected content
 		const expectedContent = `
@@ -126,6 +130,8 @@ suite("Extension Test Suite", () => {
 
 		// Save the document
 		await document.save();
+		// give time to update the document
+		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		// Set expected content
 		const expectedContent = `
@@ -174,6 +180,8 @@ suite("Extension Test Suite", () => {
 
 		// Save the document
 		await document.save();
+		// give time to update the document
+		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		// Set expected content
 		const expectedContent = `
@@ -226,6 +234,8 @@ suite("Extension Test Suite", () => {
 
 		// Save the document
 		await document.save();
+		// give time to update the document
+		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		// Set expected content
 		const expectedContent = `
@@ -249,7 +259,7 @@ suite("Extension Test Suite", () => {
 		// Close the document
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	});
-	
+
 	test("Javascript Imports in String", async () => {
 		const filePath = vscode.Uri.file(__dirname + "/test.js");
 		// Check if the file exists, create it if it doesn't
@@ -279,6 +289,8 @@ suite("Extension Test Suite", () => {
 
 		// Save the document
 		await document.save();
+		// give time to update the document
+		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		// Set expected content
 		const expectedContent = `

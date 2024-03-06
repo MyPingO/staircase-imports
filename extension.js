@@ -5,13 +5,12 @@ const javascriptFormatter = require("./formatters/javascriptFormatter");
 const javaFormatter = require("./formatters/javaFormatter");
 const Parser = require("web-tree-sitter");
 
-
 const LOADED_WASM_LANGUAGES = {
 	python: null,
 	javascript: null,
 	typescript: null,
 	java: null,
-}
+};
 
 const SUPPORTED_LANGUAGES = {
 	python: "tree-sitter-python.wasm",
@@ -47,7 +46,6 @@ async function initializeTreeSitterParser() {
 	const parser = new Parser();
 	return parser;
 }
-
 
 async function activate(context) {
 	vscode.window.showInformationMessage("Staircase Import Formatter Activated!");
@@ -91,7 +89,6 @@ function createMultilineStringMap(parser, tree, queryString) {
 			queryMap.set(startLine, endLine);
 		}
 	}
-	console.log(queryMap);
 	return queryMap;
 }
 
@@ -102,6 +99,7 @@ async function formatOnSave(event, context, parser) {
 	if (languageId in SUPPORTED_LANGUAGES) {
 		let edit;
 		let importGroups;
+		let multilineStringsMap;
 		const documentText = document.getText();
 		const lines = documentText.split(/\r?\n/); // \r? for windows compatibility
 
@@ -109,7 +107,12 @@ async function formatOnSave(event, context, parser) {
 		const tree = await createParserTree(context, languageId, parser, documentText);
 		switch (languageId) {
 			case "python":
-				importGroups = pythonFormatter.extractPythonImportGroups(lines);
+				const pythonQuery = `
+				(expression_statement([(string) (binary_operator(string))])) @string
+				(expression_statement(assignment([(string) (binary_operator(string))]))) @stringAssignment
+				`;
+				multilineStringsMap = createMultilineStringMap(parser, tree, pythonQuery);
+				importGroups = pythonFormatter.extractPythonImportGroups(lines, multilineStringsMap);
 				edit = new vscode.WorkspaceEdit();
 				for (let i = 0; i < importGroups.length; i++) {
 					const importGroup = importGroups[i];
@@ -126,10 +129,18 @@ async function formatOnSave(event, context, parser) {
 			case "typescript":
 			case "javascriptreact":
 			case "javascript":
-				// const query = "(lexical_declaration(variable_declarator(template_string)))@string";
-				const query = "(lexical_declaration(variable_declarator([(template_string) (binary_expression(string))]))) @tmpLiteral";
-				const multilineStrings = createMultilineStringMap(parser, tree, query);
-				importGroups = javascriptFormatter.extractJavascriptImportGroups(lines, multilineStrings);
+				// TODO: In the future when tree-sitter fixes this issue: https://github.com/tree-sitter/tree-sitter/issues/3141
+				// Simplify the query to
+				// (lexical_declaration(variable_declarator([(string) (template_string) (binary_expression(string))]))) @stringAssignment
+				// (lexical_declaration(variable_declarator((call_expression[(template_string) (binary_expression(string))])))) @stringCallAssignment
+
+				const javascriptQuery = `
+				(lexical_declaration(variable_declarator(string))) @string
+				(lexical_declaration(variable_declarator([(template_string) (binary_expression(string))]))) @stringAssignment
+				(lexical_declaration(variable_declarator((call_expression[(template_string) (binary_expression(string))])))) @stringCallAssignment
+				`;
+				multilineStringsMap = createMultilineStringMap(parser, tree, javascriptQuery);
+				importGroups = javascriptFormatter.extractJavascriptImportGroups(lines, multilineStringsMap);
 				edit = new vscode.WorkspaceEdit();
 				for (let i = 0; i < importGroups.length; i++) {
 					const importGroup = importGroups[i];
@@ -143,7 +154,12 @@ async function formatOnSave(event, context, parser) {
 				}
 				break;
 			case "java":
-				importGroups = javaFormatter.extractJavaImportGroups(lines);
+				const javaQuery = `
+				(local_variable_declaration(variable_declarator(string_literal (multiline_string_fragment)))) @multilineString
+				(local_variable_declaration(variable_declarator(binary_expression(string_literal (multiline_string_fragment))))) @multilineString
+				`;
+				multilineStringsMap = createMultilineStringMap(parser, tree, javaQuery);
+				importGroups = javaFormatter.extractJavaImportGroups(lines, multilineStringsMap);
 				edit = new vscode.WorkspaceEdit();
 				for (let i = 0; i < importGroups.length; i++) {
 					const imports = importGroups[i];
@@ -155,18 +171,14 @@ async function formatOnSave(event, context, parser) {
 			default:
 				break;
 		}
-		// I have no idea if any of this below code works
+
 		vscode.workspace.applyEdit(edit).then(() => {
-			// force save?
-			let save = vscode.workspace.saveAll();
-			if (!save) {
-				vscode.window.showErrorMessage("Failed to save all documents");
-			}
+			document.save();
 		});
 	}
 }
 
-function deactivate() { }
+function deactivate() {}
 
 module.exports = {
 	activate,

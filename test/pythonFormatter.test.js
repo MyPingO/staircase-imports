@@ -33,6 +33,8 @@ suite("Extension Test Suite", () => {
 		});
 
 		await document.save();
+		// give time to update the document
+		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		const expectedContent = `
         from Tt import T
@@ -69,6 +71,8 @@ suite("Extension Test Suite", () => {
 		});
 
 		await document.save();
+		// give time to update the document
+		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		const expectedContent = `
         # I am a part of T
@@ -107,6 +111,8 @@ suite("Extension Test Suite", () => {
 		});
 
 		await document.save();
+		// give time to update the document
+		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		const expectedContent = `
         from TEST import (
@@ -148,6 +154,8 @@ suite("Extension Test Suite", () => {
 		});
 
 		await document.save();
+		// give time to update the document
+		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		const expectedContent = `
         # This is a comment
@@ -193,6 +201,8 @@ suite("Extension Test Suite", () => {
 		});
 
 		await document.save();
+		// give time to update the document
+		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		const expectedContent = `
         import T # This is a comment
@@ -205,6 +215,71 @@ suite("Extension Test Suite", () => {
             test, # This is a comment
         )
         `;
+
+		const documentContent = document.getText().replace(/\r/g, "");
+
+		assert.strictEqual(documentContent, expectedContent);
+
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+	});
+
+	test("Python Imports in Strings Test", async () => {
+		const filePath = vscode.Uri.file(__dirname + "/test.py");
+		await createOrVerifyFile(filePath);
+
+		const document = await vscode.workspace.openTextDocument(filePath);
+		const editor = await vscode.window.showTextDocument(document);
+
+		// Python imports in strings
+		const content = `
+		test = \"\"\"
+		from test import test
+		import TEST as T
+		#LOL
+		import t as t
+		from Tt import T\"\"\"
+		import test as test
+		from test import test
+		import test
+		test = \"\"\"
+		import {
+			test,
+			TEST,
+			Tt
+		} from test\"\"\"
+		# test
+		import test
+		import T
+		`;
+
+		await editor.edit((editBuilder) => {
+			editBuilder.replace(new vscode.Range(0, 0, document.lineCount, 0), content);
+		});
+
+		await document.save();
+		// give time to update the document
+		await new Promise((resolve) => setTimeout(resolve, 100));
+
+		const expectedContent = `
+		test = \"\"\"
+		from test import test
+		import TEST as T
+		#LOL
+		import t as t
+		from Tt import T\"\"\"
+		import test
+		import test as test
+		from test import test
+		test = \"\"\"
+		import {
+			test,
+			TEST,
+			Tt
+		} from test\"\"\"
+		import T
+		# test
+		import test
+		`;
 
 		const documentContent = document.getText().replace(/\r/g, "");
 
