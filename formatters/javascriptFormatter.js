@@ -43,11 +43,11 @@ function pushCurrentGroupToImportGroups(importGroups, type, currentImportGroup, 
 	if (currentImportGroup.length) {
 		importGroups.push({ type: type, imports: [...currentImportGroup]});
 		currentImportGroup.length = 0;
-		currentComments.length = 0;
 	}
+	currentComments.length = 0;
 }
 
-function extractJavascriptImportGroups(lines, multilineStrings = new Map()) {
+function extractJavascriptImportGroups(lines, multilineStringsMap) {
 	let importGroups = [];
 	let currentImportGroup = [];
 	let currentComments = [];
@@ -62,12 +62,12 @@ function extractJavascriptImportGroups(lines, multilineStrings = new Map()) {
 
 		// Check if line is the start of a multiline string, if it is, continue to the end line of the multiline string
 
-		if (multilineStrings) {
-			if (multilineStrings.has(index)) {
+		if (multilineStringsMap) {
+			if (multilineStringsMap.has(index)) {
 				inMultilineString = true;
 				// Set the index to the end index of the multiline string - 1 because the loop will increment the index
 				// This is to check if the end line of the multiline string isn't also the start of another multiline string
-				index = multilineStrings.get(index) - 1;
+				index = multilineStringsMap.get(index) - 1;
 				
 				// push any potential imports in the current group to the import groups
 				pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
