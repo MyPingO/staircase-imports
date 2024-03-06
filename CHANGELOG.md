@@ -3,6 +3,10 @@
 All notable changes to the "staircase-imports" extension will be documented in this file.
 
 ## Release Notes
+-3/6/2024
+  - Integrated AST Tree Parsing for robustness and better handling of edge cases.
+  - Bug fix for multiline strings including import statements
+
 - 2 / 24 / 2024
   - Added support for Java.
   - (Developers Only) Added tests for Java formatting.
