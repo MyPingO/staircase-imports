@@ -74,9 +74,12 @@
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "prettier": "3.2.5",
+    "tree-sitter-cli": "^0.21.0",
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "tree-sitter": "^0.20.6",
+    "tree-sitter-javascript": "^0.20.3",
     "tree-sitter-wasm-prebuilt": "^0.0.3",
     "web-tree-sitter": "^0.21.0"
   }
