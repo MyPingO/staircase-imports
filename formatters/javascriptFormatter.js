@@ -1,4 +1,4 @@
-const { is } = require("express/lib/request");
+const { text } = require("body-parser");
 const vscode = require("vscode");
 
 function isStartOfMultilineImport(lineIndex, multilineImportsDict) {
@@ -39,84 +39,91 @@ function pushCurrentGroupToImportGroups(importGroups, type, currentImportGroup, 
 
 
 //NOTE: The order of the if statements in this function is important
-function extractJavascriptImportGroups(lines, multilineStringsMap, commentsMap, multilineImportsDict) {
+function extractJavascriptImportGroups(captures) {
 	let importGroups = [];
 	let currentImportGroup = [];
 	let currentComments = [];
 
-	for (let index = 0; index < lines.length; index++) {
-		const line = lines[index];
-		const trimmedLine = line.trim();
+	let lastLineIndex = 0;
+	let lastNodeWasImport = false;
 
-		// Check if line is the start of a multiline string, if it is, continue to the end line of the multiline string
+	captures.forEach(capture => {
+		const node = capture.node;
+		const captureName = capture.name;
+		const nodeStartLine = node.startPosition.row;
+		const nodeEndLine = node.endPosition.row;
 
-		if (multilineStringsMap.has(index)) {
-			/* Set the index to the end line index of the multiline string - 1 because the loop will increment the index
 
-			This is to check if the end line of the multiline string isn't also the start of another multiline string */
-
-			index = multilineStringsMap.get(index) - 1;
-
-			// push any potential imports in the current group to the import groups
+		// If the nodeStartLine - lastLineIndex > 1, then we are in a new import group, 
+		// So push the currentImportGroup to the importGroups array (if any) and reset it and the currentComments array
+		if (nodeStartLine - lastLineIndex > 1) {
 			pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
-
-			continue;
 		}
 
-		// Check if line is single line import, if true, add it to the current import group as an object { line, index, comments } and reset the current comments
+		// Otherwise we are in the same import group
 
-		if (isSinglelineImport(trimmedLine, index, multilineImportsDict)) {
-			currentImportGroup.push({ line, index, comments: [...currentComments] });
-
-			currentComments = [];
-			continue;
-		}
-
-		// Check if line is the start of a multiline comment, if it is, set inCommentBlock to true, push the current comments to the current comments stack, and continue to the end line of the multiline comment
-
-		if (commentsMap.has(index)) {
-			index = handleComments(index, lines, commentsMap, currentComments);
-			continue;
-		}
-
-		// Otherwise, push any potential imports in the current group to the import groups and reset the current import group and comments
-
-		pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
-
-		// Check if line is start of multiline import, add the current import group and comments to the import groups if they exist, reset the current import group and comments, and add this line to the current import group
-
-		if (isStartOfMultilineImport(index, multilineImportsDict)) {
-			let endLineIndex = multilineImportsDict[index].endPosition.row;
-
-			// Iterate over each line of the multiline import
-			while (index <= endLineIndex) {
-				const line = lines[index];
-				const trimmedLine = line.trim();
-
-				if (commentsMap.has(index)) {
-					index = handleComments(index, lines, commentsMap, currentComments);
-				}
-
-				// Check if line is not a comment and is not empty, if true, add it to the current import group and reset the current comments
-				else if (trimmedLine !== "") {
-					currentImportGroup.push({ line, index, comments: [...currentComments] });
-					currentComments = [];
-				}
-
-				index++;
+		// If the node is a comment add it to the currentComments array
+		if (captureName === "comment") {
+			if (nodeStartLine === lastLineIndex && lastNodeWasImport) {
+				currentImportGroup[currentImportGroup.length - 1].trailingComments.push({ node: node, text: node.text});
 			}
-			// Add the current import group to the import groups
-			pushCurrentGroupToImportGroups(importGroups, "multiline", currentImportGroup, currentComments);
-			// Decrement the index to account for the increment at the end of the while loop
-			index -= 1;
+			else {
+				currentComments.push({ node: node, text: node.text});
+				lastNodeWasImport = false;
+			}
 		}
-	}
 
-	// Add any remaining imports and comments to the import groups
-	// Any remaining imports must be singleline imports since multiline imports are handled when the end of a multiline import is found
+		// If the node is an import, do some checks to see if it's a singleline or multiline import
+		else if (captureName === "import") {
 
+			// If the start and end line is the same, it is a singleline import
+			if (nodeStartLine === nodeEndLine) {
+				currentImportGroup.push({ node: node, text: node.text, leadingComments: [...currentComments], trailingComments: [] });
+				currentComments.length = 0;
+				lastNodeWasImport = true;
+			}
+
+			// Otherwise it is a multiline import
+			else {
+				// If the currentImportGroup is not empty, push it to the importGroups array and reset it and the currentComments array
+				if (currentImportGroup.length) {
+					pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
+				}
+
+				// Get the import_clause child from the node
+				const importClause = node.namedChildren.find((child) => child.type === "import_clause");
+				// Try get the named_imports child from the import_clause
+				const namedImports = importClause.namedChildren.find((child) => child.type === "named_imports");
+				// If it exists, add every child node to the currentImportGroup array with the same comment logic as above
+				if (namedImports) {
+					namedImports.namedChildren.forEach((child) => {
+						// If the child is a comment, add it to the currentComments array
+						if (child.type === "comment") {
+							if (lastLineIndex === child.startPosition.row && lastNodeWasImport) {
+								currentImportGroup[currentImportGroup.length - 1].trailingComments.push({ node: child, text: child.text});
+							}
+							else {
+								currentComments.push({ node: child, text: child.text});
+								lastNodeWasImport = false;
+							}
+						}
+						// If the child is an import_specifier, add it to the currentImportGroup array
+						else if (child.type === "import_specifier") {
+							currentImportGroup.push({ node: child, text: child.text, leadingComments: [...currentComments], trailingComments: []});
+							currentComments.length = 0;
+							lastNodeWasImport = true;
+						}
+						lastLineIndex = child.endPosition.row;
+					});
+					lastNodeWasImport = false;
+					// Add the currentImportGroup to the importGroups array and reset it and the currentComments array
+					pushCurrentGroupToImportGroups(importGroups, "multiline", currentImportGroup, currentComments);
+				}
+			}
+		}
+		lastLineIndex = nodeEndLine;
+	});
 	pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
-
 	return importGroups;
 }
 
@@ -188,7 +195,7 @@ function replaceMultilineImportGroup(edit, imports, multilineImportsDict, docume
 
 	// // Save the leading whitespace of the first import line to be used in the replacement text
 	// let leadingWhitespace = imports[0].line.match(/^\s*/)[0];
-	
+
 	// Save the open brace and everything before it, then delete it from the first import line
 	let openingBracePart = imports[0].line.slice(0, openingBraceColumn + 1);
 	imports[0].line = imports[0].line.slice(openingBraceColumn + 1);
@@ -205,7 +212,7 @@ function replaceMultilineImportGroup(edit, imports, multilineImportsDict, docume
 	// If it has comments, replace the line with it's leading comments
 	let lastLineComments;
 	if (imports[imports.length - 1].line.trim() === "") {
-		if (imports[imports.length - 1].comments && imports[imports.length - 1].comments.length > 0){
+		if (imports[imports.length - 1].comments && imports[imports.length - 1].comments.length > 0) {
 			lastLineComments = imports[imports.length - 1].comments.map((comment) => comment.line).join("\n");
 		}
 		imports.pop();
@@ -229,7 +236,7 @@ function replaceMultilineImportGroup(edit, imports, multilineImportsDict, docume
 
 	// Add the last line's comments back to the imports array
 	if (lastLineComments) {
-		imports.push({ line: lastLineComments, index: closingBraceRow, comments: []});
+		imports.push({ line: lastLineComments, index: closingBraceRow, comments: [] });
 	}
 
 	// Sort the imports within the group according to their line length

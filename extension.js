@@ -4,6 +4,7 @@ const pythonFormatter = require("./formatters/pythonFormatter");
 const javascriptFormatter = require("./formatters/javascriptFormatter");
 const javaFormatter = require("./formatters/javaFormatter");
 const Parser = require("web-tree-sitter");
+const { start } = require("repl");
 
 const LOADED_WASM_LANGUAGES = {
 	python: null,
@@ -53,33 +54,50 @@ async function createParserTree(context, languageId, parser, documentText) {
 	return parser.parse(documentText);
 }
 
-function createParsedMaps(parser, tree, queryString) {
-	const multilineStringsMap = new Map();
-	const commentsMap = new Map();
-	const multilineImportsDict = {};
-
+function getCapturesFromQuery(parser, tree, queryString) {
 	const query = parser.getLanguage().query(queryString);
-	const matches = query.captures(tree.rootNode);
-	for (let i = 0; i < matches.length; i++) {
-		const match = matches[i];
-		const node = match.node;
+	const allCaptures = query.captures(tree.rootNode);
+	const captures = [];
+
+	let lastMultilineImportStartPos = { row: -1, col: -1};
+	let lastMultilineImportEndPos = { row: -1,col: -1 };
+
+	allCaptures.forEach((capture) => {
+		const name = capture.name;
+		const node = capture.node;
 		const startPosition = node.startPosition;
 		const endPosition = node.endPosition;
-		if (startPosition.row !== endPosition.row) {
-			if (match.name === "string") {
-				multilineStringsMap.set(startPosition.row, endPosition.row);
-			}
-			else if (match.name === "imports") {
-				// add start line as key and node.text and end line as value
-				multilineImportsDict[startPosition.row] = { text: node.text, endPosition: endPosition, startPosition: startPosition};
+
+		if (name === "import" && startPosition.row != endPosition.row) {
+			lastMultilineImportStartPos = startPosition;
+			lastMultilineImportEndPos = endPosition;
+		}
+		else if (name === "comment") {
+			// Skip comments inside multiline imports because we handle them separately later
+			if (
+				(
+					startPosition.row > lastMultilineImportStartPos.row ||
+					(
+						startPosition.row === lastMultilineImportStartPos.row &&
+						startPosition.column > lastMultilineImportStartPos.column
+					)
+				) &&
+				(
+					startPosition.row < lastMultilineImportEndPos.row ||
+					(
+						startPosition.row === lastMultilineImportEndPos.row &&
+						startPosition.column < lastMultilineImportEndPos.column
+					)
+				)
+			) {
+				return;
 			}
 		}
-		if (match.name === "comment") {
-			commentsMap.set(startPosition.row, endPosition.row);
-		}
-	}
-	return {multilineStringsMap, commentsMap, multilineImportsDict};
+		captures.push(capture);
+	});
+	return captures;
 }
+
 
 
 
@@ -90,9 +108,7 @@ async function formatOnSave(event, context, parser) {
 	if (languageId in SUPPORTED_LANGUAGES) {
 		let edit;
 		let importGroups;
-		let multilineStringsMap;
-		let multilineImportsDict;
-		let commentsMap;
+		let captures;
 		const documentText = document.getText();
 		const lines = documentText.split(/\r?\n/); // \r? for windows compatibility
 
@@ -104,8 +120,8 @@ async function formatOnSave(event, context, parser) {
 				(expression_statement([(string) (binary_operator(string))])) @string
 				(expression_statement(assignment([(string) (binary_operator(string))]))) @string
 				`;
-				multilineStringsMap = createParsedMaps(parser, tree, pythonQuery);
-				importGroups = pythonFormatter.extractPythonImportGroups(lines, multilineStringsMap);
+				captures = getCapturesFromQuery(parser, tree, pythonQuery);
+				importGroups = pythonFormatter.extractPythonImportGroups(lines, captures);
 				edit = new vscode.WorkspaceEdit();
 				for (let i = 0; i < importGroups.length; i++) {
 					const importGroup = importGroups[i];
@@ -128,16 +144,13 @@ async function formatOnSave(event, context, parser) {
 				// (lexical_declaration(variable_declarator((call_expression[(template_string) (binary_expression(string))])))) @stringCallAssignment
 
 				const javascriptQuery = `
-				(comment) @comment
-				(import_statement(import_clause(named_imports) @imports))
-				(lexical_declaration(variable_declarator(string))) @string
-				(lexical_declaration(variable_declarator([(template_string) (binary_expression(string))]))) @string
-				(lexical_declaration(variable_declarator((call_expression[(template_string) (binary_expression(string))])))) @string
-				`;
-				({ multilineStringsMap, commentsMap, multilineImportsDict } = createParsedMaps(parser, tree, javascriptQuery));
-				importGroups = javascriptFormatter.extractJavascriptImportGroups(lines, multilineStringsMap, commentsMap, multilineImportsDict);
+					(comment) @comment
+					(import_statement) @import
+					`;
+				captures = getCapturesFromQuery(parser, tree, javascriptQuery);
+				importGroups = javascriptFormatter.extractJavascriptImportGroups(captures);
 				edit = new vscode.WorkspaceEdit();
-				
+
 				for (let i = 0; i < importGroups.length; i++) {
 					const importGroup = importGroups[i];
 					if (importGroup.imports.length > 1) {
@@ -154,7 +167,7 @@ async function formatOnSave(event, context, parser) {
 				(local_variable_declaration(variable_declarator(string_literal (multiline_string_fragment)))) @string
 				(local_variable_declaration(variable_declarator(binary_expression(string_literal (multiline_string_fragment))))) @string
 				`;
-				({ multilineStringsMap, multilineImportsMap: multilineImportsDict } = createParsedMaps(parser, tree, javaQuery));
+				captures = getCapturesFromQuery(parser, tree, javaQuery);
 				importGroups = javaFormatter.extractJavaImportGroups(lines, multilineStringsMap);
 				edit = new vscode.WorkspaceEdit();
 				for (let i = 0; i < importGroups.length; i++) {
@@ -171,7 +184,7 @@ async function formatOnSave(event, context, parser) {
 	}
 }
 
-function deactivate() {}
+function deactivate() { }
 
 module.exports = {
 	activate,
