@@ -142,24 +142,24 @@ async function formatOnSave(event, context, parser) {
 				// Simplify the query to
 				// (lexical_declaration(variable_declarator([(string) (template_string) (binary_expression(string))]))) @stringAssignment
 				// (lexical_declaration(variable_declarator((call_expression[(template_string) (binary_expression(string))])))) @stringCallAssignment
-
-				const javascriptQuery = `
-					(comment) @comment
-					(import_statement) @import
-					`;
-				captures = getCapturesFromQuery(parser, tree, javascriptQuery);
-				importGroups = javascriptFormatter.extractJavascriptImportGroups(captures);
-				edit = new vscode.WorkspaceEdit();
-
-				for (let i = 0; i < importGroups.length; i++) {
-					const importGroup = importGroups[i];
-					if (importGroup.imports.length > 1) {
-						if (importGroup.type === "singleline") {
-							javascriptFormatter.replaceSinglelineImportGroup(edit, importGroup.imports, uri);
-						} else if (importGroup.type === "multiline") {
-							javascriptFormatter.replaceMultilineImportGroup(edit, importGroup.imports, multilineImportsDict, uri);
+				try {
+					const javascriptQuery = `
+						(comment) @comment
+						(import_statement) @import
+						`;
+					captures = getCapturesFromQuery(parser, tree, javascriptQuery);
+					importGroups = javascriptFormatter.extractJavascriptImportGroups(captures);
+					edit = new vscode.WorkspaceEdit();
+	
+					for (let i = 0; i < importGroups.length; i++) {
+						const importGroup = importGroups[i];
+						if (importGroup.imports.length > 1) {
+							javascriptFormatter.replaceImportGroup(edit, importGroup.type, importGroup.imports, uri);
 						}
 					}
+				}
+				catch (error) {
+					console.error(error);
 				}
 				break;
 			case "java":
