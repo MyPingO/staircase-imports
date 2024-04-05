@@ -1,12 +1,26 @@
-const assert = require("assert");
 const vscode = require("vscode");
 
-function pushCurrentGroupToImportGroups(importGroups, type, currentImportGroup, currentComments) {
+function pushSingleLineGroup(importGroups, currentImportGroup, currentComments) {
 	if (currentImportGroup.length) {
-		importGroups.push({ type: type, imports: [...currentImportGroup] });
+		importGroups.push({ type: "singeline", imports: [...currentImportGroup] });
 		currentImportGroup.length = 0;
 	}
 	currentComments.length = 0;
+}
+
+function checkNeighborNode(nodeGroup, index, nodeTypesToCheck) {
+	let nextNode = nodeGroup[index];
+	if (nextNode && nodeTypesToCheck) return (
+		nodeTypesToCheck.includes(nextNode.type) &&
+		nextNode.startPosition.row - nodeGroup[index - 1].endPosition.row <= 1
+	);
+	else return false;
+}
+
+function lastNodeOnLine(nodeGroup, index) {
+	let nextNode = nodeGroup[index + 1];
+	if (nextNode) return nextNode.startPosition.row > nodeGroup[index].startPosition.row;
+	return true;
 }
 
 function extractJavascriptImportGroups(captures) {
@@ -27,7 +41,7 @@ function extractJavascriptImportGroups(captures) {
 		// If the nodeStartLine - lastLineIndex > 1, then we are in a new import group, 
 		// So push the currentImportGroup to the importGroups array (if any) and reset it and the currentComments array
 		if (nodeStartLine - lastLineIndex > 1) {
-			pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
+			pushSingleLineGroup(importGroups, currentImportGroup, currentComments);
 		}
 
 		// Otherwise we are in the same import group
@@ -35,10 +49,10 @@ function extractJavascriptImportGroups(captures) {
 		// If the node is a comment add it to the currentComments array
 		if (captureName === "comment") {
 			if (nodeStartLine === lastLineIndex && lastNodeWasImport) {
-				currentImportGroup[currentImportGroup.length - 1].trailingComments.push({ node: node, text: node.text});
+				currentImportGroup[currentImportGroup.length - 1].trailingComments.push({ node: node, text: node.text });
 			}
 			else {
-				currentComments.push({ node: node, text: node.text});
+				currentComments.push({ node: node, text: node.text });
 				lastNodeWasImport = false;
 			}
 		}
@@ -56,73 +70,119 @@ function extractJavascriptImportGroups(captures) {
 			// Otherwise it is a multiline import
 			else {
 				// If the currentImportGroup is not empty, push it to the importGroups array and reset it and the currentComments array
-				if (currentImportGroup.length) {
-					pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
+				pushSingleLineGroup(importGroups, currentImportGroup, currentComments);
+
+				// Check if node has syntactical errors
+				if (node.hasError()) {
+					vscode.window.showErrorMessage("Skipped formatting import at line " + (node.startPosition.row + 1) + " due to syntax error.");
+					return;
 				}
 
-				// Get the import_clause child from the node
-				const importClause = node.namedChildren.find((child) => child.type === "import_clause");
-				// Try get the named_imports child from the import_clause
-				const namedImports = importClause.namedChildren.find((child) => child.type === "named_imports");
-				// If it exists, add every child node to the currentImportGroup array with the same comment logic as above
-				if (namedImports) {
-					namedImports.children.forEach((child) => {
-						// Doing this to make node mutable
-						let node = {
-							type: child.type,
-							startPosition: { ...child.startPosition },
-							endPosition: { ...child.endPosition },
-							text: child.text,
-						};
+				const importObject = {
+					startPosition: node.startPosition,
+					endPosition: node.endPosition,
+					leadingText: "",
+					importGroups: [],
+					innerText: [],
+					trailingText: ""
+				};
 
-						if (node.text.endsWith("\r")) {
-							node.text = node.text.slice(0, -1);
-							node.endPosition.column -= 1;
+				let index = 0;
+				while (node.children[index].type != 'import_clause') {
+					importObject.leadingText += node.children[index].text + " ";
+					if (lastNodeOnLine(node.children, index)) {
+						if (node.children[index].text.endsWith("\r")) {
+							importObject.leadingText = importObject.leadingText.slice(0, -1);
+						}
+						importObject.leadingText += "\n";
+					}
+
+					index++;
+				}
+
+				if (!importObject.leadingText.endsWith("\n")) importObject.leadingText += "\n";
+				importObject.leadingText += "{";
+
+				let named_imports = node.children[index].children.find(child => child.type === "named_imports");
+
+				let importAppearances = 0;
+				let conditionalNewLine = "";
+
+				for (let i = 1; i < named_imports.children.length; i++) {
+					// creating mutable child object
+					const child = named_imports.children[i];
+					let text = child.text;
+
+					if (lastNodeOnLine(named_imports.children, i)) {
+						// Get rid of potential return carriage
+						if (text.endsWith("\r")) {
+							text = text.slice(0, -1);
 						}
 
-						// If the node is a comment, add it to the currentComments array
-						if (node.type === "comment") {
-							if (lastLineIndex === node.startPosition.row && lastNodeWasImport) {
-								currentImportGroup[currentImportGroup.length - 1].trailingComments.push({ node: node, text: node.text});
-							}
-							else {
-								currentComments.push({ node: node, text: node.text});
-								lastNodeWasImport = false;
-							}
-						}
-						// If the node is an import_specifier, add it to the currentImportGroup array
-						else if (node.type === "import_specifier") {
-							currentImportGroup.push({ node: node, text: node.text, leadingComments: [...currentComments], trailingComments: []});
+						conditionalNewLine = "\n";
+					}
+					else conditionalNewLine = "";
+
+
+					if (child.type === "comment") {
+						currentComments.push({ text: text + conditionalNewLine });
+						if (!checkNeighborNode(named_imports.children, i + 1, ["comment", "import_specifier"])) {
+							importObject.innerText.push([...currentComments]);
 							currentComments.length = 0;
-							lastNodeWasImport = true;
 						}
-						// If the node is a comma, add it to the last import_specifier in the currentImportGroup array
-						else if (node.type === ",") {
-							assert(currentImportGroup[currentImportGroup.length - 1].node.type === "import_specifier", "Expected the last node to be an import_specifier");
-							currentImportGroup[currentImportGroup.length - 1].text += ",";
+					}
+					else if (child.type === "import_specifier") {
+						importAppearances++;
+						importObject.innerText.push(importAppearances);
+						const importLine = { text: text, leadingComments: [...currentComments] };
+						currentComments.length = 0;
+
+						// Add any trailing text on the same line to importLine.text
+						i++;
+						while (named_imports.children[i].type != 'import_specifier' && named_imports.children[i].type != '}') {
+							importLine.text += " " + named_imports.children[i].text; // TODO Conditional space
+							if (lastNodeOnLine(named_imports.children, i)) {
+								if (named_imports.children[i].text.endsWith("\r")) {
+									importLine.text = importLine.text.slice(0, -1);
+								}
+								importLine.text += "\n";
+								break;
+							}
+
+							i++;
 						}
-						lastLineIndex = node.endPosition.row;
-					});
-					lastNodeWasImport = false;
-					// Add the currentImportGroup to the importGroups array and reset it and the currentComments array
-					pushCurrentGroupToImportGroups(importGroups, "multiline", currentImportGroup, currentComments);
+
+						importObject.importGroups.push(importLine);
+					}
+					else if (child.type === "}") {
+						index = node.children.indexOf(node.children.find(child => child.type === "from"));
+						importObject.trailingText = '}'
+						while (index < node.children.length) {
+							importObject.trailingText += " " + node.children[index].text;
+							index++;
+						}
+						break;
+					}
+
 				}
+
+				importGroups.push({ type: "multiline",  importObject: importObject });
 			}
 		}
 		lastLineIndex = nodeEndLine;
 	});
-	pushCurrentGroupToImportGroups(importGroups, "singleline", currentImportGroup, currentComments);
+	pushSingleLineGroup(importGroups, currentImportGroup, currentComments);
 	return importGroups;
 }
 
 
-function replaceImportGroup(edit, importGroupType, imports, documentUri) {
-	
+function replaceImportGroup(edit, importGroupType, imports, document) {
+
 	// Get the start and end position of the first and last nodes in the group
 	let startPosition;
 	if (imports[0].leadingComments && imports[0].leadingComments.length > 0) {
 		startPosition = imports[0].leadingComments[0].node.startPosition;
-	} 
+	}
 	else {
 		startPosition = imports[0].node.startPosition;
 	}
@@ -135,9 +195,6 @@ function replaceImportGroup(edit, importGroupType, imports, documentUri) {
 		endPosition = imports[imports.length - 1].node.endPosition;
 	}
 
-	// Get the whitespace count of the first node in the group
-	let whitespaceCount = startPosition.column;
-
 	let unsortedImports = [];
 
 	// Add the imports and any potential trailing comments to the unsortedImports array
@@ -147,7 +204,7 @@ function replaceImportGroup(edit, importGroupType, imports, documentUri) {
 
 		if (importGroupType === "multiline" && !importText.endsWith(",")) {
 			importText = importText + ',';
-		} 
+		}
 
 		if (importObject.trailingComments && importObject.trailingComments.length > 0) {
 			importObject.trailingComments.forEach((comment) => {
@@ -173,25 +230,41 @@ function replaceImportGroup(edit, importGroupType, imports, documentUri) {
 		// If the importLine has associated comments, add them before it
 		if (importLine.leadingComments && importLine.leadingComments.length > 0) {
 			importLine.leadingComments.forEach((comment) => {
-				importsWithLeadingComments.push(comment.text);
+				importsWithLeadingComments.push({ node: comment.node, text: comment.text });
 			});
 		}
 		// Then, add the importLine itself
-		importsWithLeadingComments.push(importLine.text);
+		importsWithLeadingComments.push({ node: importLine.node, text: importLine.text });
 	});
 
-	
-	// Go through each text line and add the whitespace to the beginning of the line
+
+	let whitespace;
+	// Do some hacky whitespace handling for the first lines in the import group
+	if (importGroupType === "multiline") {
+		const indentationSize = vscode.workspace.getConfiguration("editor").get("tabSize", 4);
+		const whitespaceCount = imports[0].startPosition.column + indentationSize;
+		whitespace = " ".repeat(whitespaceCount);
+		importsWithLeadingComments[0].text = whitespace + importsWithLeadingComments[0].text;
+	}
+	else {
+		whitespace = document.lineAt(startPosition.row).text.match(/^(\s*)/)[0];
+		//if whitespace length != start column
+		if (whitespace.length !== startPosition.column) {
+			importsWithLeadingComments[0].text = "\n" + whitespace + importsWithLeadingComments[0].text;
+		}
+	}
+
+	// Go through each text line after the first and add the whitespace to the beginning of the line
 	for (let i = 1; i < importsWithLeadingComments.length; i++) {
-		importsWithLeadingComments[i] = " ".repeat(whitespaceCount) + importsWithLeadingComments[i];
+		importsWithLeadingComments[i].text = whitespace + importsWithLeadingComments[i].text;
 	}
 
 	// Construct the sorted multiline import string
-	let replaceString = importsWithLeadingComments.join("\n");
+	let replaceString = importsWithLeadingComments.map(importLine => importLine.text).join("\n");
 
 	const range = new vscode.Range(startPosition.row, startPosition.column, endPosition.row, endPosition.column);
 
-	edit.replace(documentUri, range, replaceString);
+	edit.replace(document.uri, range, replaceString);
 }
 
 
