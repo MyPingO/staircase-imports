@@ -1,0 +1,58 @@
+name: CI
+
+on:
+    push:
+        branches: [master]
+    pull_request:
+
+permissions:
+    contents: read
+
+jobs:
+    check:
+        strategy:
+            matrix:
+                os: [ubuntu-latest, windows-latest]
+        runs-on: ${{ matrix.os }}
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+            - run: npm ci
+            - run: npm run check
+            - run: npm run grammars:update
+            - run: git diff --exit-code -- grammars
+
+    integration:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                vscode: ["1.85.2", stable]
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+            - run: npm ci
+            - run: xvfb-run -a npm run test:integration
+              env:
+                  VSCODE_VERSION: ${{ matrix.vscode }}
+
+    package:
+        needs: [check, integration]
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+            - run: npm ci
+            - run: npm run package -- --out staircase-imports.vsix
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: staircase-imports
+                  path: staircase-imports.vsix

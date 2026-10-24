@@ -1,0 +1,104 @@
+[
+	{
+		"language": "python",
+		"name": "Basic Python Imports Test",
+		"input": "\n        from test import test\n        from TEST import TEST\n        from Tt import T\n        ",
+		"expected": "\n        from Tt import T\n        from test import test\n        from TEST import TEST\n        "
+	},
+	{
+		"language": "python",
+		"name": "Basic Imports Test with Leading Comments",
+		"input": "\n        # I am a part of test\n        from test import test\n        # I am a part of TEST\n        from TEST import TEST\n        # I am a part of T\n        from Tt import T\n        ",
+		"expected": "\n        # I am a part of T\n        from Tt import T\n        # I am a part of test\n        from test import test\n        # I am a part of TEST\n        from TEST import TEST\n        "
+	},
+	{
+		"language": "python",
+		"name": "Multiline Python Imports Test",
+		"input": "\n        from TEST import (\n            TEST,\n            T, #lol\n            test,\n        )\n        ",
+		"expected": "\n        from TEST import (\n            TEST,\n            test,\n            T, #lol\n        )\n        "
+	},
+	{
+		"language": "python",
+		"name": "Python Multiline Imports Test with Leading Comments",
+		"input": "\n        # This is a comment\n        from TEST import (\n            # I am part of TEST\n            TEST,\n            # I am part of T\n            T, #}\n            # I am part of test\n            test\n        )\n        ",
+		"expected": "\n        # This is a comment\n        from TEST import (\n            # I am part of TEST\n            TEST,\n            # I am part of T\n            T, #}\n            # I am part of test\n            test,\n        )\n        "
+	},
+	{
+		"language": "python",
+		"name": "Python Multiline Imports Test with Trailing Comments",
+		"input": "\n        import T # This is a comment\n        import TEST as T # This is a comment\n        from test import test # This is a comment\n\n        from TEST import (\n            TEST, # This is a comment\n            T, # This is a comment\n            test # This is a comment\n        )\n        ",
+		"expected": "\n        import T # This is a comment\n        import TEST as T # This is a comment\n        from test import test # This is a comment\n\n        from TEST import (\n            T, # This is a comment\n            TEST, # This is a comment\n            test, # This is a comment\n        )\n        "
+	},
+	{
+		"language": "python",
+		"name": "Python Imports in Strings Test",
+		"input": "\n\t\ttest = \"\"\"\n\t\tfrom test import test\n\t\timport TEST as T\n\t\t#LOL\n\t\timport t as t\n\t\tfrom Tt import T\"\"\"\n\t\timport test as test\n\t\tfrom test import test\n\t\timport test\n\t\ttest = \"\"\"\n\t\timport {\n\t\t\ttest,\n\t\t\tTEST,\n\t\t\tTt\n\t\t} from test\"\"\"\n\t\t# test\n\t\timport test\n\t\timport T\n\t\t",
+		"expected": "\n\t\ttest = \"\"\"\n\t\tfrom test import test\n\t\timport TEST as T\n\t\t#LOL\n\t\timport t as t\n\t\tfrom Tt import T\"\"\"\n\t\timport test\n\t\timport test as test\n\t\tfrom test import test\n\t\ttest = \"\"\"\n\t\timport {\n\t\t\ttest,\n\t\t\tTEST,\n\t\t\tTt\n\t\t} from test\"\"\"\n\t\timport T\n\t\t# test\n\t\timport test\n\t\t"
+	},
+	{
+		"language": "javascript",
+		"name": "Basic Javascript Imports Test",
+		"input": "\n\t\timport TEST from \"TEST\";\n\t\timport { test } from \"a\";\n\t\timport { T } from \"Tt\";\n\t\t",
+		"expected": "\n\t\timport { T } from \"Tt\";\n\t\timport TEST from \"TEST\";\n\t\timport { test } from \"a\";\n\t\t"
+	},
+	{
+		"language": "javascript",
+		"name": "Basic Imports Test with Leading Comments",
+		"input": "\n\t\t// I am a part of TEST\n\t\timport TEST from \"TEST\";\n\t\t// I am a part of test\n\t\timport { test } from \"test\";\n\t\t// I am a part of T\n\t\timport { T } from \"T\";\n\t\t",
+		"expected": "\n\t\t// I am a part of T\n\t\timport { T } from \"T\";\n\t\t// I am a part of TEST\n\t\timport TEST from \"TEST\";\n\t\t// I am a part of test\n\t\timport { test } from \"test\";\n\t\t"
+	},
+	{
+		"language": "javascript",
+		"name": "Multiline Javascript Imports Test",
+		"input": "\n\t\timport { \n\t\t\tTEST,\n\t\t\tT, //lol\n\t\t\ttest\n\t\t} from \"TEST\";\n\t\t",
+		"expected": "\n\t\timport { \n\t\t\tTEST,\n\t\t\ttest,\n\t\t\tT, //lol\n\t\t} from \"TEST\";\n\t\t"
+	},
+	{
+		"language": "javascript",
+		"name": "Javascript Multiline Imports Test with Leading Comments",
+		"input": "\n\t\t// This is a comment\n\t\timport { \n\t\t\t// I am part of TEST\n\t\t\tTEST,\n\t\t\t// I am part of T\n\t\t\tT, //}\n\t\t\t// I am part of test\n\t\t\ttest\n\t\t} from \"TEST\";\n\t\t",
+		"expected": "\n\t\t// This is a comment\n\t\timport { \n\t\t\t// I am part of TEST\n\t\t\tTEST,\n\t\t\t// I am part of test\n\t\t\ttest,\n\t\t\t// I am part of T\n\t\t\tT, //}\n\t\t} from \"TEST\";\n\t\t"
+	},
+	{
+		"language": "javascript",
+		"name": "Javascript Imports Test with Trailing Comments",
+		"input": "\n\t\timport Test from \"Test\"; // This is a comment\n\t\timport T from \"T\"; // This is a comment\n\t\timport test from \"test\"; // This is a comment\n\n\t\timport { \n\t\t\tTEST, // This is a comment\n\t\t\tT, // This is a comment\n\t\t\ttest // This is a comment\n\t\t} from \"TEST\";\n\t\t",
+		"expected": "\n\t\timport T from \"T\"; // This is a comment\n\t\timport Test from \"Test\"; // This is a comment\n\t\timport test from \"test\"; // This is a comment\n\n\t\timport { \n\t\t\tT, // This is a comment\n\t\t\tTEST, // This is a comment\n\t\t\ttest, // This is a comment\n\t\t} from \"TEST\";\n\t\t"
+	},
+	{
+		"language": "javascript",
+		"name": "Javascript Imports in String",
+		"input": "\n\t\tconst test = `\n\t\timport { \n\t\t\tTEST,\n\t\t\tT, //lol\n\t\t\ttest\n\t\t} from \"TEST\";\n\t\timport test from \"test\";\n\t\timport { T } from \"T\";\n\t\timport TEST from \"TEST\";\n\t\t`;\n\t\t",
+		"expected": "\n\t\tconst test = `\n\t\timport { \n\t\t\tTEST,\n\t\t\tT, //lol\n\t\t\ttest\n\t\t} from \"TEST\";\n\t\timport test from \"test\";\n\t\timport { T } from \"T\";\n\t\timport TEST from \"TEST\";\n\t\t`;\n\t\t"
+	},
+	{
+		"language": "java",
+		"name": "Imports Test",
+		"input": "\n        import java.util.Map;\n        import java.util.ArrayList;\n        import java.util.List;\n        ",
+		"expected": "\n        import java.util.Map;\n        import java.util.List;\n        import java.util.ArrayList;\n        "
+	},
+	{
+		"language": "java",
+		"name": "Imports Test with Leading Comments",
+		"input": "\n        // I am a part of T\n        import java.util.Map;\n        // I am a part of test\n        import java.util.ArrayList;\n        // I am a part of TEST\n        import java.util.List;\n        ",
+		"expected": "\n        // I am a part of T\n        import java.util.Map;\n        // I am a part of TEST\n        import java.util.List;\n        // I am a part of test\n        import java.util.ArrayList;\n        "
+	},
+	{
+		"language": "java",
+		"name": "Imports Test with Leading Comments and Empty Lines",
+		"input": "\n        // I am a part of test\n        import java.util.ArrayList;\n\n        // I am a part of TEST\n        import java.util.List;\n\n        // I am a part of T\n        import java.util.Map;\n        ",
+		"expected": "\n        // I am a part of test\n        import java.util.ArrayList;\n\n        // I am a part of TEST\n        import java.util.List;\n\n        // I am a part of T\n        import java.util.Map;\n        "
+	},
+	{
+		"language": "java",
+		"name": "Imports With Multiline Comments Test",
+		"input": "\n        /*\n        I am a part of TEST\n        */\n        import java.util.List;\n        /*\n        I am a part of T\n        */\n        import java.util.Map;\n        /*\n        I am a part of test\n        */\n        import java.util.ArrayList;\n        ",
+		"expected": "\n        /*\n        I am a part of T\n        */\n        import java.util.Map;\n        /*\n        I am a part of TEST\n        */\n        import java.util.List;\n        /*\n        I am a part of test\n        */\n        import java.util.ArrayList;\n        "
+	},
+	{
+		"language": "java",
+		"name": "Imports Inside of Multiline String Test",
+		"input": "\n        String test = \"\"\"\n        import java.util.List;\n        import java.util.Map;\n        import java.util.ArrayList;\n        \"\"\";\n        ",
+		"expected": "\n        String test = \"\"\"\n        import java.util.List;\n        import java.util.Map;\n        import java.util.ArrayList;\n        \"\"\";\n        "
+	}
+]

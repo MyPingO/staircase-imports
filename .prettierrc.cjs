@@ -6,7 +6,6 @@ module.exports = {
 	insertPragma: false,
 	singleAttributePerLine: false,
 	bracketSameLine: false,
-	jsxBracketSameLine: false,
 	jsxSingleQuote: false,
 	printWidth: 120,
 	proseWrap: "preserve",
@@ -18,5 +17,4 @@ module.exports = {
 	trailingComma: "all",
 	useTabs: true,
 	vueIndentScriptAndStyle: false,
-	parser: "babel",
 };
