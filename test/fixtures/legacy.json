@@ -33,7 +33,8 @@
 		"language": "python",
 		"name": "Python Imports in Strings Test",
 		"input": "\n\t\ttest = \"\"\"\n\t\tfrom test import test\n\t\timport TEST as T\n\t\t#LOL\n\t\timport t as t\n\t\tfrom Tt import T\"\"\"\n\t\timport test as test\n\t\tfrom test import test\n\t\timport test\n\t\ttest = \"\"\"\n\t\timport {\n\t\t\ttest,\n\t\t\tTEST,\n\t\t\tTt\n\t\t} from test\"\"\"\n\t\t# test\n\t\timport test\n\t\timport T\n\t\t",
-		"expected": "\n\t\ttest = \"\"\"\n\t\tfrom test import test\n\t\timport TEST as T\n\t\t#LOL\n\t\timport t as t\n\t\tfrom Tt import T\"\"\"\n\t\timport test\n\t\timport test as test\n\t\tfrom test import test\n\t\ttest = \"\"\"\n\t\timport {\n\t\t\ttest,\n\t\t\tTEST,\n\t\t\tTt\n\t\t} from test\"\"\"\n\t\timport T\n\t\t# test\n\t\timport test\n\t\t"
+		"expected": "\n\t\ttest = \"\"\"\n\t\tfrom test import test\n\t\timport TEST as T\n\t\t#LOL\n\t\timport t as t\n\t\tfrom Tt import T\"\"\"\n\t\timport test as test\n\t\tfrom test import test\n\t\timport test\n\t\ttest = \"\"\"\n\t\timport {\n\t\t\ttest,\n\t\t\tTEST,\n\t\t\tTt\n\t\t} from test\"\"\"\n\t\timport T\n\t\t# test\n\t\timport test\n\t\t",
+		"note": "Keep the three imports that bind test in source order; the original expected result changed the final binding."
 	},
 	{
 		"language": "javascript",

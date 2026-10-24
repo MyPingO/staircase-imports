@@ -1,5 +1,5 @@
 const javascript = { grammar: "javascript", family: "javascript", imports: ["import_statement"] };
-const typescript = { ...javascript, grammar: "typescript" };
+const typescript = { ...javascript, grammar: "typescript", imports: ["import_statement", "import_alias"] };
 
 /** @type {Readonly<Record<string, {grammar: string, family: string, imports: string[]}>>} */
 const LANGUAGES = Object.freeze({

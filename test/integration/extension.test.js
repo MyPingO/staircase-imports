@@ -198,4 +198,34 @@ suite("Staircase Imports in VS Code", () => {
 		const input = "import longest\nimport a\n";
 		await saveAndAssert(await createDocument("txt", input), input);
 	});
+
+	test("formats unusual layouts on the first save without changing Python suite boundaries", async () => {
+		const examples = [
+			[
+				"py",
+				"if ready: import longest, a; import bb; run()\n",
+				"if ready: import a; import bb; import longest; run()\n",
+			],
+			["py", "from pkg import longest, \\\n a\n", "from pkg import (\n a,\n longest,\n)\n"],
+			["js", 'import { longest,\n  a } from "x";\n', 'import {\n  a,\n  longest,\n} from "x";\n'],
+			["java", "import java\n .util.ArrayList; import a.B;\n", "import a.B;\nimport java.util.ArrayList;\n"],
+			[
+				"ts",
+				"namespace N { import LongAlias = X.Y.Z; import A = X.Y; }\n",
+				"namespace N { import A = X.Y;\nimport LongAlias = X.Y.Z; }\n",
+			],
+			[
+				"tsx",
+				'import type {Longest as Alias, A} from "x";\nconst x = <A/>;\n',
+				'import type {\n    A,\n    Longest as Alias,\n} from "x";\nconst x = <A/>;\n',
+			],
+		];
+		for (const [extension, input, expected] of examples)
+			await saveAndAssert(await createDocument(extension, input), expected);
+	});
+
+	test("saving incomplete import syntax still succeeds without edits", async () => {
+		const source = 'import {longest, a from "x";\n';
+		await saveAndAssert(await createDocument("js", source), source);
+	});
 });

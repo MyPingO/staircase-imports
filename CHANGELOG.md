@@ -2,6 +2,15 @@
 
 All notable changes to the "staircase-imports" extension will be documented in this file.
 
+## 0.7.0
+
+-   Format parsed static imports regardless of physical layout: compact and mixed lists, split aliases, separate commas, shared statement lines, Python continuations, and split Java declarations.
+-   Normalize multi-module Python imports to separate statements and unparenthesized `from` lists to a staircase.
+-   Preserve Python inline suites, wildcard boundaries, and the effective order of shadowed bindings.
+-   Support TypeScript namespace aliases and exported import aliases.
+-   Reparse every proposed rewrite and validate import bindings, scope, comments, literals, and non-import code before applying edits.
+-   Add generated layout checks with independent JavaScript/TypeScript parsing and integration tests for unusual layouts.
+
 ## 0.6.0
 
 -   Replaced duplicated line scanners with a shared syntax-tree-based formatter.

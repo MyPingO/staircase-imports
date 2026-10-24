@@ -2,6 +2,7 @@ const path = require("node:path");
 const { Parser, Language } = require("web-tree-sitter");
 const { LANGUAGES } = require("./languages");
 const { collectEdits } = require("./imports");
+const { fingerprint } = require("./invariants");
 
 /** @type {Promise<void> | undefined} */
 let initialization;
@@ -55,11 +56,29 @@ class ImportFormatter {
 		const parser = new Parser();
 		/** @type {import("web-tree-sitter").Tree | null} */
 		let tree = null;
+		/** @type {import("web-tree-sitter").Tree | null} */
+		let verification = null;
 		try {
 			parser.setLanguage(language);
 			tree = parser.parse(source);
-			return tree ? collectEdits(source, tree.rootNode, definition, order) : [];
+			if (!tree || tree.rootNode.hasError) return [];
+			const edits = collectEdits(source, tree.rootNode, definition, order);
+			if (!edits.length) return [];
+			const formatted = edits.reduceRight(
+				(text, edit) => text.slice(0, edit.start) + edit.newText + text.slice(edit.end),
+				source,
+			);
+			verification = parser.parse(formatted);
+			if (
+				!verification ||
+				verification.rootNode.hasError ||
+				fingerprint(tree.rootNode, definition) !== fingerprint(verification.rootNode, definition)
+			) {
+				throw new Error("Import formatting failed syntax or preservation checks; no edits were applied.");
+			}
+			return edits;
 		} finally {
+			verification?.delete();
 			tree?.delete();
 			parser.delete();
 		}
