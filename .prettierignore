@@ -1,0 +1,8 @@
+node_modules/
+.vscode-test/
+*.vsix
+media/
+grammars/*.wasm
+package-lock.json
+LICENSE.md
+test/test.*

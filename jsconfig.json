@@ -1,9 +1,11 @@
 {
-  "compilerOptions": {
-    "module": "CommonJS",
-    "target": "ES2022",
-    "checkJs": true /* Typecheck .js files. */,
-    "lib": ["ES2022"]
-  },
-  "exclude": ["node_modules"]
+	"compilerOptions": {
+		"module": "Node16",
+		"target": "ES2022",
+		"checkJs": true,
+		"strict": true,
+		"skipLibCheck": true,
+		"lib": ["ES2022"]
+	},
+	"include": ["extension.js", "src/**/*.js", "scripts/**/*.js"]
 }

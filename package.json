@@ -1,83 +1,115 @@
 {
-  "name": "staircase-import-formatter",
-  "displayName": "Staircase Imports",
-  "description": "Format your library imports in a staircase pattern",
-  "version": "0.5.0",
-  "engines": {
-    "vscode": "^1.85.0"
-  },
-  "publisher": "MyPing0",
-  "author": {
-    "name": "MyPing0",
-    "email": "mypingo7@yahoo.com"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/MyPingO/staircase-imports"
-  },
-  "keywords": [
-    "staircase",
-    "imports",
-    "formatter",
-    "python",
-    "vscode",
-    "extension",
-    "MyPing0"
-  ],
-  "icon": "media/icon.png",
-  "categories": [
-    "Formatters",
-    "Other"
-  ],
-  "activationEvents": [
-    "onLanguage:python",
-    "onLanguage:javascript",
-    "onLanguage:typescript",
-    "onLanguage:java"
-  ],
-  "main": "./extension.js",
-  "contributes": {
-    "configuration": {
-      "title": "Staircase Import Formatter",
-      "properties": {
-        "Staircase Import Formatter.order": {
-          "type": "string",
-          "default": "ascending",
-          "enum": [
-            "ascending",
-            "descending"
-          ],
-          "description": "Choose between ascending or descending order for import statements."
-        },
-        "Staircase Import Formatter.enabled": {
-          "type": "string",
-          "default": "enabled",
-          "enum": [
-            "enabled",
-            "disabled"
-          ],
-          "description": "Enable or disabled the Staircase Imports extension."
-        }
-      }
-    }
-  },
-  "scripts": {
-    "test": "vscode-test"
-  },
-  "devDependencies": {
-    "@types/mocha": "^10.0.6",
-    "@types/node": "18.x",
-    "@types/vscode": "^1.85.0",
-    "@vscode/test-cli": "^0.0.4",
-    "@vscode/test-electron": "^2.3.9",
-    "eslint": "^8.56.0",
-    "eslint-config-prettier": "^9.1.0",
-    "prettier": "3.2.5",
-    "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "tree-sitter-wasm-prebuilt": "^0.0.3",
-    "web-tree-sitter": "^0.21.0"
-  }
+	"name": "staircase-import-formatter",
+	"displayName": "Staircase Imports",
+	"description": "Format your library imports in a staircase pattern",
+	"version": "0.7.0",
+	"engines": {
+		"vscode": "^1.85.0"
+	},
+	"publisher": "MyPing0",
+	"author": {
+		"name": "MyPing0",
+		"email": "mypingo7@yahoo.com"
+	},
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/MyPingO/staircase-imports"
+	},
+	"keywords": [
+		"staircase",
+		"imports",
+		"formatter",
+		"python",
+		"vscode",
+		"extension",
+		"MyPing0"
+	],
+	"icon": "media/icon.png",
+	"categories": [
+		"Formatters",
+		"Other"
+	],
+	"activationEvents": [
+		"onLanguage:python",
+		"onLanguage:javascript",
+		"onLanguage:javascriptreact",
+		"onLanguage:typescript",
+		"onLanguage:typescriptreact",
+		"onLanguage:java"
+	],
+	"main": "./extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "staircaseImports.format",
+				"title": "Staircase Imports: Format Imports",
+				"enablement": "editorLangId == python || editorLangId == javascript || editorLangId == javascriptreact || editorLangId == typescript || editorLangId == typescriptreact || editorLangId == java"
+			}
+		],
+		"configuration": {
+			"title": "Staircase Import Formatter",
+			"properties": {
+				"Staircase Import Formatter.order": {
+					"type": "string",
+					"default": "ascending",
+					"scope": "resource",
+					"enum": [
+						"ascending",
+						"descending"
+					],
+					"description": "Choose between ascending or descending order for import statements."
+				},
+				"Staircase Import Formatter.enabled": {
+					"type": "string",
+					"default": "enabled",
+					"scope": "resource",
+					"enum": [
+						"enabled",
+						"disabled"
+					],
+					"description": "Enable or disable Staircase Imports on save and its formatting command."
+				}
+			}
+		}
+	},
+	"scripts": {
+		"test": "node --test test/unit/*.test.js",
+		"test:integration": "vscode-test",
+		"lint": "eslint extension.js src scripts test --max-warnings 0",
+		"typecheck": "tsc --project jsconfig.json --noEmit",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"check": "npm run lint && npm run typecheck && npm run format:check && npm test",
+		"grammars:update": "node scripts/update-grammars.js",
+		"package": "vsce package"
+	},
+	"devDependencies": {
+		"@types/mocha": "^10.0.6",
+		"@types/node": "18.x",
+		"@types/vscode": "^1.85.0",
+		"@vscode/test-cli": "0.0.15",
+		"@vscode/test-electron": "3.1.0",
+		"@vscode/tree-sitter-wasm": "0.3.1",
+		"@vscode/vsce": "3.9.2",
+		"eslint": "^8.56.0",
+		"eslint-config-prettier": "^9.1.0",
+		"prettier": "3.2.5",
+		"typescript": "^5.9.3"
+	},
+	"overrides": {
+		"@vscode/vsce": {
+			"@azure/identity": "4.12.0",
+			"@azure/msal-node": {
+				"uuid": "11.1.1"
+			}
+		},
+		"@vscode/test-cli": {
+			"diff": "8.0.4",
+			"serialize-javascript": "7.1.4"
+		}
+	},
+	"dependencies": {
+		"web-tree-sitter": "0.27.1"
+	}
 }
