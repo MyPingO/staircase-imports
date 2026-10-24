@@ -31,6 +31,8 @@ Integration tests use temporary files and an isolated VS Code profile. They chec
 
 Set `VSCODE_VERSION=1.85.2` in your shell to check the minimum supported minor version. CI tests the minimum version and current stable VS Code, and runs the source checks on Windows and Linux.
 
+The development tools have scoped npm overrides: VSCE uses a compatible Azure Identity version outside the affected MSAL range, its MSAL dependency uses a patched UUID release, and the VS Code test runner uses patched `diff` and `serialize-javascript` releases. Review these pins when updating the tools, run `npm audit`, and verify both integration hosts before removing them.
+
 Press F5 in VS Code to launch an Extension Development Host for manual testing. To install a build in your own editor, use **Extensions: Install from VSIX...** on the package produced by `npm run package`.
 
 ## Grammar updates
